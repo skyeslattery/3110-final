@@ -1,4 +1,4 @@
 (executable
  (public_name camelgo)
  (name main)
- (libraries camelgo))
+ (libraries camelgo ocaml-canvas))
