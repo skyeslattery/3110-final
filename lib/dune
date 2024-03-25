@@ -1,2 +1,3 @@
 (library
- (name camelgo))
+ (name camelgo)
+ (libraries ocaml-canvas))
