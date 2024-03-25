@@ -1,5 +1,5 @@
 open OcamlCanvas.V1
-open State
+open Obstacle
 
 let events = ref []
 
@@ -20,7 +20,7 @@ let start () =
 
   Canvas.show c;
 
-  let game_state = State.create () in
+  let game_state = Obstacle.create 800. 150. (-200.) 0. in  (* Using create function with parameters *)
 
   retain_event @@
     React.E.map (fun _ ->
@@ -32,12 +32,9 @@ let start () =
         let dt = 0.033 in  (* Time increment per frame *)
         let (x, y) = game_state.pos in
         let (vx, vy) = game_state.vel in
-        let new_x = x +. (vx *. dt) in  (* Update position based on velocity *)
+        let new_x = x +. (vx *. dt) in  
         let new_y = y +. (vy *. dt) in
         game_state.pos <- (new_x, new_y);
-
-        (* If the box reaches the end of the canvas, wrap around *)
-        if new_x >= float_of_int width then game_state.pos <- (0.0, y);
 
         Canvas.clearPath c;
         Canvas.setFillColor c Color.white;
