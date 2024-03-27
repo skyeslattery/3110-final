@@ -76,7 +76,6 @@ let start () =
           Backend.stop ();
           clear_events ();
           Printf.printf "Game Over! You collided with the obstacle.\n";
-          Unix.sleepf 0.03;
           exit 0;  (* Exit the program *)
         );
 
