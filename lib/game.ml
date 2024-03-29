@@ -72,7 +72,7 @@ let start () =
         let obstacle_state = update_obstacle obstacle_state ob_new_x ob_new_y in
 
         (* Check for collision between player and obstacle *)
-        if collision player_state obstacle_state then (
+        if collision player_state obstacle_state 47. 47. then (
           Backend.stop ();
           clear_events ();
           Printf.printf "Game Over! You collided with the obstacle.\n";
