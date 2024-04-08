@@ -5,7 +5,7 @@ type t = {
   mutable vel : float * float;
 }
 
-let create_player () = { pos = (50., 170.); vel = (0., 0.) }
+let create_player () = { pos = (50., 173.); vel = (0., 0.) }
 
 let update_player player x y vx vy =
   player.pos <- (x, y);
@@ -15,6 +15,6 @@ let update_player player x y vx vy =
 let jump_impulse = 95.
 let jump t = t.vel <- (fst t.vel, snd t.vel -. jump_impulse)
 
-let draw_player c player =
+let draw_box c player =
   let x, y = player.pos in
   Canvas.fillRect c ~pos:(x, y) ~size:(35., 30.)

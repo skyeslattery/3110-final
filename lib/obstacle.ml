@@ -13,7 +13,7 @@ let update_obstacle ob x y =
 
 let draw_obstacle c obstacle =
   let x, y = obstacle.pos in
-  Canvas.fillRect c ~pos:(x, y) ~size:(20.0, 20.0)
+  Canvas.fillRect c ~pos:(x, y) ~size:(22.0, 22.0)
 
 let get_x ob = fst ob.pos
 let get_y ob = snd ob.pos
