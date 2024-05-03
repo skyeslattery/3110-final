@@ -9,6 +9,7 @@ let grounded = ref true (* Flag indicating whether the player is grounded *)
 let retain_event e = events := e :: !events
 let clear_events () = events := []
 let obstacles = ref []
+let score = ref 0.
 
 type state = { mutable image_opt : Canvas.t option }
 
@@ -53,6 +54,12 @@ let start () =
     | h :: t ->
         collision player_state h ob_height ob_width
         || check_collisions player_state t ob_height ob_width
+  in
+
+  let draw_score canvas =
+    Canvas.setFillColor canvas Color.black;
+    Canvas.setFont canvas "arial" ~size:24. ~slant:Font.Roman ~weight:50;
+    Canvas.fillText canvas (string_of_int (int_of_float !score)) (745., 24.)
   in
 
   let rec draw_obstacles canvas obstacles =
@@ -124,18 +131,14 @@ let start () =
       Printf.printf "Game Over! You collided with the obstacle.\n";
       exit 0 (* Exit the program *));
 
-    (* Clear canvas and draw objects *)
-    Canvas.clearPath c;
     Canvas.setFillColor c Color.white;
-    Canvas.fillRect c ~pos:(0.0, 0.0)
-      ~size:(float_of_int width, float_of_int height);
-    (* Clear canvas *)
-    Canvas.setFillColor c Color.black;
 
     load_bg c;
+    draw_score c;
     draw_player c player_state;
     draw_obstacles c !obstacles;
 
+    score := !score +. 0.3;
     Canvas.fill c ~nonzero:true;
     Canvas.stroke c
   in
