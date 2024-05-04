@@ -269,6 +269,12 @@ let start best_score game_finished =
 
   retain_event
   @@ React.E.map
+       (fun { Event.data = { Event.key; _ }; _ } ->
+         if key = KeyEscape then exit 0)
+       Event.key_down;
+
+  retain_event
+  @@ React.E.map
        (fun _ -> if is_alive player_state then draw_frame ())
        Event.frame;
 

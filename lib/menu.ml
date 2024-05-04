@@ -58,6 +58,12 @@ let start_menu best_score menu_finished =
 
   retain_event
   @@ React.E.map
+       (fun { Event.data = { Event.key; _ }; _ } ->
+         if key = KeyEscape then exit 0)
+       Event.key_down;
+
+  retain_event
+  @@ React.E.map
        (fun _ -> if menu_state.is_active then draw_menu ())
        Event.frame;
 
