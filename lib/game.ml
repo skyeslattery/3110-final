@@ -22,8 +22,13 @@ let cactus_short_img = { image_opt = None }
 let cactus_tall_img = { image_opt = None }
 let cactus_normal_img = { image_opt = None }
 
-let start () =
+let start best_score game_finished =
   Backend.init ();
+  score := 0.0;
+  grounded := true;
+  obstacles := [ create_obstacle 800. 183. (-200.) 0. ];
+  events := [];
+  let player_state = create_player best_score in
 
   let width = 800 in
   let height = 250 in
@@ -52,16 +57,17 @@ let start () =
        camel3_image;
 
   let draw_player canvas player_state =
-    let x, y = player_state.pos in
-    let index = int_of_float (!score /. 3.) mod 3 in
-    (* Cycle through camel images *)
-    match camel_images.(index).image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
-        Canvas.show canvas
-    | _ -> ()
+    if is_alive player_state then
+      let x, y = player_state.pos in
+      let index = int_of_float (!score /. 3.) mod 3 in
+      (* Cycle through camel images *)
+      match camel_images.(index).image_opt with
+      | Some image ->
+          Canvas.blit ~dst:c
+            ~dpos:(int_of_float x, int_of_float y)
+            ~src:image ~spos:(0, 0) ~size:(35, 30);
+          Canvas.show canvas
+      | _ -> ()
   in
 
   let rec update_obstacles obstacles =
@@ -77,16 +83,17 @@ let start () =
         updated_obstacle :: update_obstacles t
   in
 
-  let player_state = create_player () in
   let initial_obstacle = create_obstacle 800. 183. (-200.) 0. in
   obstacles := initial_obstacle :: !obstacles;
 
   let rec check_collisions player_state obstacles ob_height ob_width =
-    match obstacles with
-    | [] -> false
-    | h :: t ->
-        collision player_state h ob_height ob_width
-        || check_collisions player_state t ob_height ob_width
+    if is_alive player_state then
+      match obstacles with
+      | [] -> false
+      | h :: t ->
+          collision player_state h ob_height ob_width
+          || check_collisions player_state t ob_height ob_width
+    else false
   in
 
   let draw_score canvas =
@@ -99,10 +106,6 @@ let start () =
 
   let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png" in
 
-  (* let player_image = if int_of_float !score mod 3 = 0 then
-     Canvas.createOffscreenFromPNG "./assets/camel1.png" else if int_of_float
-     !score mod 3 = 1 then Canvas.createOffscreenFromPNG "./assets/camel2.png"
-     else Canvas.createOffscreenFromPNG "./assets/camel2.png" in *)
   let cactus_normal_image =
     Canvas.createOffscreenFromPNG "./assets/cactus_normal.png"
   in
@@ -199,26 +202,25 @@ let start () =
     in
 
     if Random.int 50 = 0 then add_obstacle 200.;
-    (* Update the obstacles *) obstacles := update_obstacles !obstacles;
+    obstacles := update_obstacles !obstacles;
 
-    (* Check for collision between player and obstacle *)
     if check_collisions player_state !obstacles 47. 47. then (
-      Backend.stop ();
+      player_state.is_alive <- false;
       clear_events ();
-      Printf.printf "Game Over! You collided with the obstacle.\n";
-      exit 0 (* Exit the program *));
+      events := [];
+      Canvas.hide c;
+      game_finished (max (int_of_float !score) best_score))
+    else (
+      Canvas.setFillColor c Color.white;
+      load_bg c;
+      draw_score c;
 
-    Canvas.setFillColor c Color.white;
+      draw_player c player_state;
+      draw_obstacles c !obstacles;
 
-    load_bg c;
-    draw_score c;
-
-    draw_player c player_state;
-    draw_obstacles c !obstacles;
-
-    score := !score +. 0.3;
-    Canvas.fill c ~nonzero:true;
-    Canvas.stroke c
+      score := !score +. 0.3;
+      Canvas.fill c ~nonzero:true;
+      Canvas.stroke c)
   in
 
   retain_event
@@ -254,8 +256,7 @@ let start () =
   @@ React.E.map
        (fun _ ->
          Backend.stop ();
-         clear_events ();
-         Printf.printf "Goodbye !\n")
+         clear_events ())
        Event.close;
 
   retain_event
@@ -266,6 +267,9 @@ let start () =
            grounded := false))
        Event.key_down;
 
-  retain_event @@ React.E.map (fun _ -> draw_frame ()) Event.frame;
+  retain_event
+  @@ React.E.map
+       (fun _ -> if is_alive player_state then draw_frame ())
+       Event.frame;
 
   Backend.run (fun () -> clear_events ())

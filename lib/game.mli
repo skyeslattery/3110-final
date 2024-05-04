@@ -14,4 +14,4 @@ val camel_images : state array
 val cactus_short_img : state
 val cactus_tall_img : state
 val cactus_normal_img : state
-val start : unit -> 'a
+val start : int -> (int -> unit) -> 'a

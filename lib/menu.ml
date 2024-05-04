@@ -9,9 +9,9 @@ type menu_state = {
   mutable is_active : bool;
 }
 
-let initialize_menu_state () = { best_score = 0; is_active = true }
+let initialize_menu_state best_score = { best_score; is_active = true }
 
-let start_menu () =
+let start_menu best_score menu_finished =
   Backend.init ();
   let width = 800. in
   let height = 600. in
@@ -22,12 +22,10 @@ let start_menu () =
   in
   Canvas.show canvas;
 
-  let menu_state = initialize_menu_state () in
+  let menu_state = initialize_menu_state best_score in
 
   let draw_menu () =
-    if menu_state.is_active then
-      (* Only draw if the menu is active *)
-      Canvas.clearPath canvas;
+    if menu_state.is_active then Canvas.clearPath canvas;
     Canvas.setFillColor canvas Color.white;
     Canvas.fillRect canvas ~pos:(0., 0.) ~size:(width, height);
     Canvas.setFillColor canvas Color.black;
@@ -55,7 +53,7 @@ let start_menu () =
        (fun { Event.data = { Event.key; _ }; _ } ->
          if key = KeySpacebar && menu_state.is_active then (
            close_menu ();
-           Game.start ()))
+           menu_finished menu_state.best_score))
        Event.key_down;
 
   retain_event
