@@ -177,6 +177,27 @@ let start best_score game_finished =
     obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
   in
 
+  let min_spawn_interval = 3. in
+  let max_spawn_interval = 6. in
+  let obstacle_speed = 200. in
+  (* Factor by which obstacle speed increases with score *)
+  let speed_increase_factor = 1.05 in
+
+  let calculate_spawn_interval () =
+    let min_interval =
+      min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+    in
+    let max_interval =
+      max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+    in
+    Random.float (max_interval -. min_interval) +. min_interval
+  in
+
+  let spawn_obstacle () =
+    let vel = obstacle_speed +. (!score /. 10.) in
+    add_obstacle vel
+  in
+
   let draw_frame () =
     let dt = 0.033 in
 
@@ -201,7 +222,8 @@ let start best_score game_finished =
       update_player player_state pl_new_x pl_new_y pl_vx pl_new_vy
     in
 
-    if Random.int 50 = 0 then add_obstacle 200.;
+    if Random.float 1.0 < dt /. calculate_spawn_interval () then
+      spawn_obstacle ();
     obstacles := update_obstacles !obstacles;
 
     if check_collisions player_state !obstacles 47. 47. then (
