@@ -15,6 +15,9 @@ type state = { mutable image_opt : Canvas.t option }
 
 let bg_img = { image_opt = None }
 let player_img = { image_opt = None }
+let cactus_short_img = { image_opt = None }
+let cactus_tall_img = { image_opt = None }
+let cactus_normal_img = { image_opt = None }
 
 let start () =
   Backend.init ();
@@ -22,7 +25,6 @@ let start () =
   let width = 800 in
   (* Width of the canvas *)
   let height = 250 in
-
   (* Height of the canvas *)
   let c =
     Canvas.createOnscreen ~title:"CamelGO" ~pos:(300, 200) ~size:(width, height)
@@ -62,6 +64,73 @@ let start () =
     Canvas.fillText canvas (string_of_int (int_of_float !score)) (745., 24.)
   in
 
+  let bg_image = Canvas.createOffscreenFromPNG "./assets/bg.png" in
+
+  let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png" in
+
+  (* let player_image = if int_of_float !score mod 3 = 0 then
+     Canvas.createOffscreenFromPNG "./assets/camel1.png" else if int_of_float
+     !score mod 3 = 1 then Canvas.createOffscreenFromPNG "./assets/camel2.png"
+     else Canvas.createOffscreenFromPNG "./assets/camel2.png" in *)
+  let cactus_normal_image =
+    Canvas.createOffscreenFromPNG "./assets/cactus_normal.png"
+  in
+  let cactus_short_image =
+    Canvas.createOffscreenFromPNG "./assets/cactus_short.png"
+  in
+  let cactus_tall_image =
+    Canvas.createOffscreenFromPNG "./assets/cactus_tall.png"
+  in
+
+  let load_bg canvas =
+    match bg_img.image_opt with
+    | Some bg_image ->
+        Canvas.blit ~dst:c ~dpos:(0, 0) ~src:bg_image ~spos:(0, 0)
+          ~size:(width, height);
+        Canvas.show canvas
+    | _ -> ()
+  in
+
+  let draw_short c ob =
+    let x, y = get_pos ob in
+    match cactus_short_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+
+  let draw_tall c ob =
+    let x, y = get_pos ob in
+    match cactus_tall_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+
+  let draw_normal c ob =
+    let x, y = get_pos ob in
+    match cactus_normal_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+
+  let draw_obstacle c obstacle =
+    match get_type obstacle with
+    | 0 -> draw_short c obstacle
+    | 1 -> draw_tall c obstacle
+    | _ -> draw_normal c obstacle
+  in
+
   let rec draw_obstacles canvas obstacles =
     match obstacles with
     | [] -> ()
@@ -72,18 +141,6 @@ let start () =
 
   let add_obstacle vel =
     obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
-  in
-
-  let bg_image = Canvas.createOffscreenFromPNG "./assets/bg.png" in
-  let player_image = Canvas.createOffscreenFromPNG "./assets/camel.png" in
-
-  let load_bg canvas =
-    match bg_img.image_opt with
-    | Some bg_image ->
-        Canvas.blit ~dst:c ~dpos:(0, 0) ~src:bg_image ~spos:(0, 0)
-          ~size:(width, height);
-        Canvas.show canvas
-    | _ -> ()
   in
 
   let draw_player canvas player_state =
@@ -135,6 +192,7 @@ let start () =
 
     load_bg c;
     draw_score c;
+
     draw_player c player_state;
     draw_obstacles c !obstacles;
 
@@ -155,7 +213,22 @@ let start () =
        (fun player_image ->
          player_img.image_opt <- Some player_image;
          draw_player c player_state)
-       player_image;
+       camel1_image;
+
+  retain_event
+  @@ React.E.map
+       (fun cac_norm_img -> cactus_normal_img.image_opt <- Some cac_norm_img)
+       cactus_normal_image;
+
+  retain_event
+  @@ React.E.map
+       (fun cac_short_img -> cactus_short_img.image_opt <- Some cac_short_img)
+       cactus_short_image;
+
+  retain_event
+  @@ React.E.map
+       (fun cac_tall_img -> cactus_tall_img.image_opt <- Some cac_tall_img)
+       cactus_tall_image;
 
   retain_event
   @@ React.E.map
