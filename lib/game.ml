@@ -5,7 +5,7 @@ open Collision
 
 let gravity_acceleration = 95.
 let events = ref []
-let grounded = ref true (* Flag indicating whether the player is grounded *)
+let grounded = ref true
 let retain_event e = events := e :: !events
 let clear_events () = events := []
 let obstacles = ref []
@@ -15,6 +15,9 @@ type state = { mutable image_opt : Canvas.t option }
 
 let bg_img = { image_opt = None }
 let player_img = { image_opt = None }
+let camel_images = Array.init 3 (fun _ -> { image_opt = None })
+(* Initialize an array for the camel images *)
+
 let cactus_short_img = { image_opt = None }
 let cactus_tall_img = { image_opt = None }
 let cactus_normal_img = { image_opt = None }
@@ -23,15 +26,43 @@ let start () =
   Backend.init ();
 
   let width = 800 in
-  (* Width of the canvas *)
   let height = 250 in
-  (* Height of the canvas *)
   let c =
     Canvas.createOnscreen ~title:"CamelGO" ~pos:(300, 200) ~size:(width, height)
       ()
   in
 
   Canvas.show c;
+
+  let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png" in
+  let camel2_image = Canvas.createOffscreenFromPNG "./assets/camel2.png" in
+  let camel3_image = Canvas.createOffscreenFromPNG "./assets/camel3.png" in
+
+  retain_event
+  @@ React.E.map
+       (fun img -> camel_images.(0).image_opt <- Some img)
+       camel1_image;
+  retain_event
+  @@ React.E.map
+       (fun img -> camel_images.(1).image_opt <- Some img)
+       camel2_image;
+  retain_event
+  @@ React.E.map
+       (fun img -> camel_images.(2).image_opt <- Some img)
+       camel3_image;
+
+  let draw_player canvas player_state =
+    let x, y = player_state.pos in
+    let index = int_of_float (!score /. 3.) mod 3 in
+    (* Cycle through camel images *)
+    match camel_images.(index).image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show canvas
+    | _ -> ()
+  in
 
   let rec update_obstacles obstacles =
     match obstacles with
@@ -141,17 +172,6 @@ let start () =
 
   let add_obstacle vel =
     obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
-  in
-
-  let draw_player canvas player_state =
-    let x, y = player_state.pos in
-    match player_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
-        Canvas.show canvas
-    | _ -> ()
   in
 
   let draw_frame () =
