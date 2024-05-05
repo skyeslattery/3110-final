@@ -103,13 +103,15 @@ let start best_score game_finished =
         update_dec h new_x new_y :: update_decorations t
   in
 
-  let rec check_collisions player_state obstacles ob_height ob_width =
+  let rec check_collisions player_state obstacles =
     if is_alive player_state then
       match obstacles with
       | [] -> false
       | h :: t ->
-          collision player_state h ob_height ob_width
-          || check_collisions player_state t ob_height ob_width
+          collision player_state h
+            (float_of_int (get_height h))
+            (float_of_int (get_width h))
+          || check_collisions player_state t
     else false
   in
 
@@ -308,7 +310,7 @@ let start best_score game_finished =
       spawn_dec ();
     decorations := update_decorations !decorations;
 
-    if check_collisions player_state !obstacles 47. 47. then (
+    if check_collisions player_state !obstacles then (
       player_state.is_alive <- false;
       clear_events ();
       events := [];

@@ -37,3 +37,15 @@ let get_type ob =
   | Short -> 0
   | Normal -> 1
   | Tall -> 2
+
+let get_height ob =
+  match ob.style with
+  | Short -> 9
+  | Tall -> 31
+  | _ -> 22
+
+let get_width ob =
+  match ob.style with
+  | Short -> 31
+  | Tall -> 14
+  | _ -> 15

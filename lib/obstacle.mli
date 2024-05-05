@@ -17,3 +17,5 @@ val get_y : t -> float
 val get_pos : t -> float * float
 val get_vel : t -> float * float
 val get_type : t -> int
+val get_height : t -> int
+val get_width : t -> int
