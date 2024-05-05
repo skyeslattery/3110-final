@@ -2,6 +2,7 @@ open OcamlCanvas.V1
 open Obstacle
 open Player
 open Collision
+open Decorations
 
 let gravity_acceleration = 240.
 let events = ref []
@@ -9,6 +10,10 @@ let grounded = ref true
 let retain_event e = events := e :: !events
 let clear_events () = events := []
 let obstacles = ref []
+let decorations = ref []
+
+(* Function to spawn decorations *)
+
 let score = ref 0.
 
 type state = { mutable image_opt : Canvas.t option }
@@ -18,6 +23,8 @@ let player_img = { image_opt = None }
 let camel_images = Array.init 3 (fun _ -> { image_opt = None })
 (* Initialize an array for the camel images *)
 
+let grass1_img = { image_opt = None }
+let grass2_img = { image_opt = None }
 let cactus_short_img = { image_opt = None }
 let cactus_tall_img = { image_opt = None }
 let cactus_normal_img = { image_opt = None }
@@ -26,7 +33,8 @@ let start best_score game_finished =
   Backend.init ();
   score := 0.0;
   grounded := true;
-  obstacles := [ create_obstacle 800. 183. (-200.) 0. ];
+  obstacles := [ create_obstacle 800. 183. (-170.) 0. ];
+  decorations := [ create_dec 1000. 183. (-170.) 0. ];
   events := [];
   let player_state = create_player best_score in
 
@@ -70,7 +78,7 @@ let start best_score game_finished =
       | _ -> ()
   in
 
-  let rec update_obstacles obstacles =
+  let rec update_obstacles (obstacles : Obstacle.t list) =
     match obstacles with
     | [] -> []
     | h :: t ->
@@ -81,6 +89,18 @@ let start best_score game_finished =
         let ob_new_y = ob_y +. (ob_vy *. dt) in
         let updated_obstacle = update_obstacle h ob_new_x ob_new_y in
         updated_obstacle :: update_obstacles t
+  in
+
+  let rec update_decorations decs =
+    match decs with
+    | [] -> []
+    | h :: t ->
+        let dx, dy = get_ob_vel h in
+        let x, y = get_ob_pos h in
+        let dt = 0.033 in
+        let new_x = x +. (dx *. dt) in
+        let new_y = y +. (dy *. dt) in
+        update_dec h new_x new_y :: update_decorations t
   in
 
   let rec check_collisions player_state obstacles ob_height ob_width =
@@ -114,6 +134,9 @@ let start best_score game_finished =
     Canvas.createOffscreenFromPNG "./assets/cactus_tall.png"
   in
 
+  let grass1_image = Canvas.createOffscreenFromPNG "./assets/grass1.png" in
+
+  let grass2_image = Canvas.createOffscreenFromPNG "./assets/grass2.png" in
   let load_bg canvas =
     match bg_img.image_opt with
     | Some bg_image ->
@@ -156,6 +179,34 @@ let start best_score game_finished =
     | _ -> ()
   in
 
+  let draw_grass1 c g1 =
+    let x, y = get_ob_pos g1 in
+    match grass1_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+
+  let draw_grass2 c g2 =
+    let x, y = get_ob_pos g2 in
+    match grass2_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+
+  let draw_dec c (dec : Decorations.t) =
+    match get_ob_type dec with
+    | 0 -> draw_grass1 c dec
+    | _ -> draw_grass2 c dec
+  in
+
   let draw_obstacle c obstacle =
     match get_type obstacle with
     | 0 -> draw_short c obstacle
@@ -163,7 +214,7 @@ let start best_score game_finished =
     | _ -> draw_normal c obstacle
   in
 
-  let rec draw_obstacles canvas obstacles =
+  let rec draw_obstacles canvas (obstacles : Obstacle.t list) =
     match obstacles with
     | [] -> ()
     | h :: t ->
@@ -171,29 +222,58 @@ let start best_score game_finished =
         draw_obstacles canvas t
   in
 
+  let rec draw_decs canvas (decs : Decorations.t list) =
+    match decs with
+    | [] -> ()
+    | h :: t ->
+        draw_dec canvas h;
+        draw_decs canvas t
+  in
+
   let add_obstacle vel =
     obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
   in
 
-  let min_spawn_interval = 5. in
-  let max_spawn_interval = 7.5 in
-  let obstacle_speed = 175. in
+  let add_dec vel =
+    decorations := create_dec 800. 183. (vel *. -1.) 0. :: !decorations
+  in
+
+  let ob_min_spawn_interval = 6. in
+  let ob_max_spawn_interval = 7.5 in
+  let dec_min_spawn_interval = 2. in
+  let dec_max_spawn_interval = 4. in
+  let speed = 170. in
   (* Factor by which obstacle speed increases with score *)
   let speed_increase_factor = 1.05 in
 
-  let calculate_spawn_interval () =
+  let calculate_ob_spawn_interval () =
     let min_interval =
-      min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+      ob_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
     in
     let max_interval =
-      max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+      ob_max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+    in
+    Random.float (max_interval -. min_interval) +. min_interval
+  in
+
+  let calculate_dec_spawn_interval () =
+    let min_interval =
+      dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+    in
+    let max_interval =
+      dec_max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
     in
     Random.float (max_interval -. min_interval) +. min_interval
   in
 
   let spawn_obstacle () =
-    let vel = obstacle_speed +. (!score /. 10.) in
+    let vel = speed +. (!score /. 10.) in
     add_obstacle vel
+  in
+
+  let spawn_dec () =
+    let vel = speed +. (!score /. 10.) in
+    add_dec vel
   in
 
   let draw_frame () =
@@ -220,9 +300,13 @@ let start best_score game_finished =
       update_player player_state pl_new_x pl_new_y pl_vx pl_new_vy
     in
 
-    if Random.float 1.0 < dt /. calculate_spawn_interval () then
+    if Random.float 1.0 < dt /. calculate_ob_spawn_interval () then
       spawn_obstacle ();
     obstacles := update_obstacles !obstacles;
+
+    if Random.float 1.0 < dt /. calculate_dec_spawn_interval () then
+      spawn_dec ();
+    decorations := update_decorations !decorations;
 
     if check_collisions player_state !obstacles 47. 47. then (
       player_state.is_alive <- false;
@@ -236,6 +320,7 @@ let start best_score game_finished =
       draw_score c;
 
       draw_player c player_state;
+      draw_decs c !decorations;
       draw_obstacles c !obstacles;
 
       score := !score +. 0.3;
@@ -261,6 +346,16 @@ let start best_score game_finished =
   @@ React.E.map
        (fun cac_norm_img -> cactus_normal_img.image_opt <- Some cac_norm_img)
        cactus_normal_image;
+
+  retain_event
+  @@ React.E.map
+       (fun g1_img -> grass1_img.image_opt <- Some g1_img)
+       grass1_image;
+
+  retain_event
+  @@ React.E.map
+       (fun g2_img -> grass2_img.image_opt <- Some g2_img)
+       grass2_image;
 
   retain_event
   @@ React.E.map
