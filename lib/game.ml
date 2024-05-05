@@ -3,7 +3,7 @@ open Obstacle
 open Player
 open Collision
 
-let gravity_acceleration = 95.
+let gravity_acceleration = 240.
 let events = ref []
 let grounded = ref true
 let retain_event e = events := e :: !events

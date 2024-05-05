@@ -15,7 +15,7 @@ let update_player player x y vx vy =
   player.vel <- (vx, vy);
   player
 
-let jump_impulse = 95.
+let jump_impulse = 175.
 let jump t = t.vel <- (fst t.vel, snd t.vel -. jump_impulse)
 
 let draw_box c player =
