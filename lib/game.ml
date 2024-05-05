@@ -83,9 +83,6 @@ let start best_score game_finished =
         updated_obstacle :: update_obstacles t
   in
 
-  let initial_obstacle = create_obstacle 800. 183. (-200.) 0. in
-  obstacles := initial_obstacle :: !obstacles;
-
   let rec check_collisions player_state obstacles ob_height ob_width =
     if is_alive player_state then
       match obstacles with
@@ -97,8 +94,9 @@ let start best_score game_finished =
   in
 
   let draw_score canvas =
-    Canvas.setFillColor canvas Color.black;
-    Canvas.setFont canvas "arial" ~size:24. ~slant:Font.Roman ~weight:50;
+    Canvas.setFillColor canvas (Color.of_rgb 27 23 27);
+    Canvas.setFont canvas "Geonica" ~size:28. ~slant:Font.Roman ~weight:50;
+    Canvas.setLineWidth canvas 15.;
     Canvas.fillText canvas (string_of_int (int_of_float !score)) (745., 24.)
   in
 
@@ -177,9 +175,9 @@ let start best_score game_finished =
     obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
   in
 
-  let min_spawn_interval = 3. in
-  let max_spawn_interval = 6. in
-  let obstacle_speed = 200. in
+  let min_spawn_interval = 5. in
+  let max_spawn_interval = 7.5 in
+  let obstacle_speed = 175. in
   (* Factor by which obstacle speed increases with score *)
   let speed_increase_factor = 1.05 in
 
