@@ -28,13 +28,24 @@ let grass2_img = { image_opt = None }
 let cactus_short_img = { image_opt = None }
 let cactus_tall_img = { image_opt = None }
 let cactus_normal_img = { image_opt = None }
+let cloud1_img = { image_opt = None }
+let cloud2_img = { image_opt = None }
+let cloud3_img = { image_opt = None }
+let star1_img = { image_opt = None }
+let star2_img = { image_opt = None }
 
 let start best_score game_finished =
   Backend.init ();
   score := 0.0;
   grounded := true;
   obstacles := [ create_obstacle 800. 183. (-170.) 0. ];
-  decorations := [ create_dec 1000. 183. (-170.) 0. ];
+  decorations := [ create_grass 1000. 183. (-170.) 0. ];
+  decorations :=
+    create_star (Random.float 200. +. 400.) 25. (-10.) 0. :: !decorations;
+  decorations :=
+    create_cloud (Random.float 50. +. 50.) 70. (-20.) 0. :: !decorations;
+  decorations :=
+    create_cloud (Random.float 200. +. 500.) 90. (-15.) 0. :: !decorations;
   events := [];
   let player_state = create_player best_score in
 
@@ -154,6 +165,13 @@ let start best_score game_finished =
   let grass1_image = Canvas.createOffscreenFromPNG "./assets/grass1.png" in
 
   let grass2_image = Canvas.createOffscreenFromPNG "./assets/grass2.png" in
+
+  let cloud1_image = Canvas.createOffscreenFromPNG "./assets/cloud1.png" in
+  let cloud2_image = Canvas.createOffscreenFromPNG "./assets/cloud2.png" in
+  let cloud3_image = Canvas.createOffscreenFromPNG "./assets/cloud3.png" in
+  let star1_image = Canvas.createOffscreenFromPNG "./assets/star1.png" in
+  let star2_image = Canvas.createOffscreenFromPNG "./assets/star2.png" in
+
   let load_bg canvas =
     match bg_img.image_opt with
     | Some bg_image ->
@@ -217,11 +235,66 @@ let start best_score game_finished =
         Canvas.show c
     | _ -> ()
   in
+  let draw_cloud1 c g2 =
+    let x, y = get_dec_pos g2 in
+    match cloud1_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+  let draw_cloud2 c g2 =
+    let x, y = get_dec_pos g2 in
+    match cloud2_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+  let draw_cloud3 c g2 =
+    let x, y = get_dec_pos g2 in
+    match cloud3_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+  let draw_star1 c g2 =
+    let x, y = get_dec_pos g2 in
+    match star1_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
+  let draw_star2 c g2 =
+    let x, y = get_dec_pos g2 in
+    match star2_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(35, 30);
+        Canvas.show c
+    | _ -> ()
+  in
 
   let draw_dec c (dec : Decorations.t) =
     match get_dec_type dec with
     | 0 -> draw_grass1 c dec
-    | _ -> draw_grass2 c dec
+    | 1 -> draw_grass2 c dec
+    | 2 -> draw_star1 c dec
+    | 3 -> draw_star2 c dec
+    | 4 -> draw_cloud1 c dec
+    | 5 -> draw_cloud2 c dec
+    | _ -> draw_cloud3 c dec
   in
 
   let draw_obstacle c obstacle =
@@ -251,12 +324,22 @@ let start best_score game_finished =
     obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
   in
 
-  let add_dec vel =
-    decorations := create_dec 800. 183. (vel *. -1.) 0. :: !decorations
+  let add_grass vel =
+    decorations := create_grass 800. 183. (vel *. -1.) 0. :: !decorations
+  in
+
+  let add_cloud vel =
+    decorations :=
+      create_cloud 800. (Random.float 100.) (vel *. -1.) 0. :: !decorations
+  in
+
+  let add_star vel =
+    decorations :=
+      create_star 800. (Random.float 25.) (vel *. -1.) 0. :: !decorations
   in
 
   let ob_min_spawn_interval = 8. in
-  let ob_max_spawn_interval = 8.5 in
+  let ob_max_spawn_interval = 10. in
   let dec_min_spawn_interval = 2. in
   let dec_max_spawn_interval = 4. in
   let speed = 170. in
@@ -273,7 +356,7 @@ let start best_score game_finished =
     Random.float (max_interval -. min_interval) +. min_interval
   in
 
-  let calculate_dec_spawn_interval () =
+  let calculate_grass_spawn_interval () =
     let min_interval =
       dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
     in
@@ -283,14 +366,44 @@ let start best_score game_finished =
     Random.float (max_interval -. min_interval) +. min_interval
   in
 
+  let calculate_cloud_spawn_interval () =
+    let min_interval =
+      dec_min_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
+    in
+    let max_interval =
+      dec_max_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
+    in
+    Random.float (max_interval -. min_interval) +. min_interval
+  in
+
+  let calculate_star_spawn_interval () =
+    let min_interval =
+      dec_min_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
+    in
+    let max_interval =
+      dec_max_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
+    in
+    Random.float (max_interval -. min_interval) +. min_interval
+  in
+
   let spawn_obstacle () =
     let vel = speed +. (!score /. 10.) in
     add_obstacle vel
   in
 
-  let spawn_dec () =
+  let spawn_grass () =
     let vel = speed +. (!score /. 10.) in
-    add_dec vel
+    add_grass vel
+  in
+
+  let spawn_cloud () =
+    let vel = Random.float 5. +. 12. in
+    add_cloud vel
+  in
+
+  let spawn_star () =
+    let vel = Random.float 10. in
+    add_star vel
   in
 
   let draw_frame () =
@@ -321,8 +434,14 @@ let start best_score game_finished =
       spawn_obstacle ();
     obstacles := update_obstacles !obstacles;
 
-    if Random.float 1.0 < dt /. calculate_dec_spawn_interval () then
-      spawn_dec ();
+    if Random.float 1.0 < dt /. calculate_grass_spawn_interval () then
+      spawn_grass ();
+
+    if Random.float 1.0 < dt /. calculate_cloud_spawn_interval () then
+      spawn_cloud ();
+
+    if Random.float 1.0 < dt /. calculate_star_spawn_interval () then
+      spawn_star ();
     decorations := update_decorations !decorations;
 
     if check_collisions player_state !obstacles then (
@@ -334,11 +453,11 @@ let start best_score game_finished =
     else (
       Canvas.setFillColor c Color.white;
       load_bg c;
-      draw_score c;
 
       draw_player c player_state;
       draw_decs c !decorations;
       draw_obstacles c !obstacles;
+      draw_score c;
 
       score := !score +. 0.3;
       Canvas.fill c ~nonzero:true;
@@ -376,6 +495,27 @@ let start best_score game_finished =
 
   retain_event
   @@ React.E.map
+       (fun c1_img -> cloud1_img.image_opt <- Some c1_img)
+       cloud1_image;
+
+  retain_event
+  @@ React.E.map
+       (fun c2_img -> cloud2_img.image_opt <- Some c2_img)
+       cloud2_image;
+
+  retain_event
+  @@ React.E.map
+       (fun c3_img -> cloud3_img.image_opt <- Some c3_img)
+       cloud3_image;
+
+  retain_event
+  @@ React.E.map (fun s1_img -> star1_img.image_opt <- Some s1_img) star1_image;
+
+  retain_event
+  @@ React.E.map (fun s2_img -> star2_img.image_opt <- Some s2_img) star2_image;
+
+  retain_event
+  @@ React.E.map
        (fun cac_short_img -> cactus_short_img.image_opt <- Some cac_short_img)
        cactus_short_image;
 
@@ -394,7 +534,7 @@ let start best_score game_finished =
   retain_event
   @@ React.E.map
        (fun { Event.data = { Event.key; _ }; _ } ->
-         if key = KeySpacebar && !grounded then (
+         if (key = KeySpacebar || key = KeyUpArrow) && !grounded then (
            Player.jump player_state;
            grounded := false))
        Event.key_down;

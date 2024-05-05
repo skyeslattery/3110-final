@@ -1,11 +1,22 @@
+type decoration_type =
+  | Star1
+  | Star2
+  | Grass1
+  | Grass2
+  | Cloud1
+  | Cloud2
+  | Cloud3
+
 type t = {
   mutable pos : float * float;
   vel : float * float;
-  style : int;
+  style : decoration_type;
 }
 
 val adjust_position : 'a -> float -> 'a * float
-val create_dec : float -> float -> float -> float -> t
+val create_star : float -> float -> float -> float -> t
+val create_cloud : float -> float -> float -> float -> t
+val create_grass : float -> float -> float -> float -> t
 val update_dec : t -> float -> float -> t
 val get_dec_x : t -> float
 val get_dec_y : t -> float
