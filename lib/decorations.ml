@@ -15,8 +15,8 @@ let update_dec dec x y =
   dec.pos <- (x, y);
   dec
 
-let get_ob_x dec = fst dec.pos
-let get_ob_y dec = snd dec.pos
-let get_ob_pos dec = dec.pos
-let get_ob_vel dec = dec.vel
-let get_ob_type dec = dec.style
+let get_dec_x dec = fst dec.pos
+let get_dec_y dec = snd dec.pos
+let get_dec_pos dec = dec.pos
+let get_dec_vel dec = dec.vel
+let get_dec_type dec = dec.style

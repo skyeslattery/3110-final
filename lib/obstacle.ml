@@ -13,7 +13,7 @@ let adjust_position x y style =
   match style with
   | 0 -> (x +. 3., y +. 3.)
   | 1 -> (x -. 9., y -. 9.)
-  | _ -> (x -. 9., y -. 9.)
+  | _ -> (x -. 12., y -. 12.)
 
 let create_obstacle x y vx vy =
   let rand = Random.int 3 in

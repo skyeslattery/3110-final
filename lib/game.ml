@@ -20,7 +20,7 @@ type state = { mutable image_opt : Canvas.t option }
 
 let bg_img = { image_opt = None }
 let player_img = { image_opt = None }
-let camel_images = Array.init 3 (fun _ -> { image_opt = None })
+let camel_images = Array.init 6 (fun _ -> { image_opt = None })
 (* Initialize an array for the camel images *)
 
 let grass1_img = { image_opt = None }
@@ -50,6 +50,9 @@ let start best_score game_finished =
   let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png" in
   let camel2_image = Canvas.createOffscreenFromPNG "./assets/camel2.png" in
   let camel3_image = Canvas.createOffscreenFromPNG "./assets/camel3.png" in
+  let camel4_image = Canvas.createOffscreenFromPNG "./assets/camel4.png" in
+  let camel5_image = Canvas.createOffscreenFromPNG "./assets/camel5.png" in
+  let camel6_image = Canvas.createOffscreenFromPNG "./assets/camel6.png" in
 
   retain_event
   @@ React.E.map
@@ -63,17 +66,29 @@ let start best_score game_finished =
   @@ React.E.map
        (fun img -> camel_images.(2).image_opt <- Some img)
        camel3_image;
+  retain_event
+  @@ React.E.map
+       (fun img -> camel_images.(3).image_opt <- Some img)
+       camel4_image;
+  retain_event
+  @@ React.E.map
+       (fun img -> camel_images.(4).image_opt <- Some img)
+       camel5_image;
+  retain_event
+  @@ React.E.map
+       (fun img -> camel_images.(5).image_opt <- Some img)
+       camel6_image;
 
   let draw_player canvas player_state =
     if is_alive player_state then
       let x, y = player_state.pos in
-      let index = int_of_float (!score /. 3.) mod 3 in
+      let index = int_of_float (!score /. 2.) mod 6 in
       (* Cycle through camel images *)
       match camel_images.(index).image_opt with
       | Some image ->
           Canvas.blit ~dst:c
             ~dpos:(int_of_float x, int_of_float y)
-            ~src:image ~spos:(0, 0) ~size:(35, 30);
+            ~src:image ~spos:(0, 0) ~size:(40, 30);
           Canvas.show canvas
       | _ -> ()
   in
@@ -95,8 +110,8 @@ let start best_score game_finished =
     match decs with
     | [] -> []
     | h :: t ->
-        let dx, dy = get_ob_vel h in
-        let x, y = get_ob_pos h in
+        let dx, dy = get_dec_vel h in
+        let x, y = get_dec_pos h in
         let dt = 0.033 in
         let new_x = x +. (dx *. dt) in
         let new_y = y +. (dy *. dt) in
@@ -182,7 +197,7 @@ let start best_score game_finished =
   in
 
   let draw_grass1 c g1 =
-    let x, y = get_ob_pos g1 in
+    let x, y = get_dec_pos g1 in
     match grass1_img.image_opt with
     | Some image ->
         Canvas.blit ~dst:c
@@ -193,7 +208,7 @@ let start best_score game_finished =
   in
 
   let draw_grass2 c g2 =
-    let x, y = get_ob_pos g2 in
+    let x, y = get_dec_pos g2 in
     match grass2_img.image_opt with
     | Some image ->
         Canvas.blit ~dst:c
@@ -204,7 +219,7 @@ let start best_score game_finished =
   in
 
   let draw_dec c (dec : Decorations.t) =
-    match get_ob_type dec with
+    match get_dec_type dec with
     | 0 -> draw_grass1 c dec
     | _ -> draw_grass2 c dec
   in
@@ -240,8 +255,8 @@ let start best_score game_finished =
     decorations := create_dec 800. 183. (vel *. -1.) 0. :: !decorations
   in
 
-  let ob_min_spawn_interval = 6. in
-  let ob_max_spawn_interval = 7.5 in
+  let ob_min_spawn_interval = 8. in
+  let ob_max_spawn_interval = 8.5 in
   let dec_min_spawn_interval = 2. in
   let dec_max_spawn_interval = 4. in
   let speed = 170. in

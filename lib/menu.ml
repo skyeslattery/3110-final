@@ -47,7 +47,7 @@ let start_menu best_score menu_finished =
     Canvas.fillRect canvas ~pos:(0., 0.) ~size:(width, height);
     Canvas.setFillColor canvas (Color.of_rgb 27 23 27);
     Canvas.setFont canvas "Geonica" ~size:28. ~slant:Font.Roman ~weight:50;
-    Canvas.setLineWidth canvas 15.;
+    Canvas.setLineWidth canvas 18.;
     load_bg canvas;
     let text = "Press SPACE to Start Game" in
     let text_x = 240. in
