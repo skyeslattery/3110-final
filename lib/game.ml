@@ -41,11 +41,11 @@ let start best_score game_finished =
   obstacles := [ create_obstacle 800. 183. (-170.) 0. ];
   decorations := [ create_grass 1000. 183. (-170.) 0. ];
   decorations :=
-    create_star (Random.float 200. +. 400.) 25. (-10.) 0. :: !decorations;
+    create_star (Random.float 200. +. 400.) 25. (-8.5) 0. :: !decorations;
   decorations :=
-    create_cloud (Random.float 50. +. 50.) 70. (-20.) 0. :: !decorations;
+    create_cloud (Random.float 50. +. 50.) 70. (-17.) 0. :: !decorations;
   decorations :=
-    create_cloud (Random.float 200. +. 500.) 90. (-15.) 0. :: !decorations;
+    create_cloud (Random.float 200. +. 500.) 90. (-17.) 0. :: !decorations;
   events := [];
   let player_state = create_player best_score in
 
@@ -145,7 +145,7 @@ let start best_score game_finished =
     Canvas.setFillColor canvas (Color.of_rgb 27 23 27);
     Canvas.setFont canvas "Geonica" ~size:28. ~slant:Font.Roman ~weight:50;
     Canvas.setLineWidth canvas 15.;
-    Canvas.fillText canvas (string_of_int (int_of_float !score)) (745., 24.)
+    Canvas.fillText canvas (string_of_int (int_of_float !score)) (740., 24.)
   in
 
   let bg_image = Canvas.createOffscreenFromPNG "./assets/bg.png" in
@@ -187,7 +187,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(36, 14);
         Canvas.show c
     | _ -> ()
   in
@@ -198,7 +198,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(19, 36);
         Canvas.show c
     | _ -> ()
   in
@@ -209,7 +209,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(20, 27);
         Canvas.show c
     | _ -> ()
   in
@@ -220,7 +220,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(20, 7);
         Canvas.show c
     | _ -> ()
   in
@@ -231,7 +231,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(20, 7);
         Canvas.show c
     | _ -> ()
   in
@@ -241,7 +241,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(77, 20);
         Canvas.show c
     | _ -> ()
   in
@@ -251,7 +251,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(73, 36);
         Canvas.show c
     | _ -> ()
   in
@@ -261,7 +261,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(80, 23);
         Canvas.show c
     | _ -> ()
   in
@@ -271,7 +271,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(6, 7);
         Canvas.show c
     | _ -> ()
   in
@@ -281,7 +281,7 @@ let start best_score game_finished =
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(35, 30);
+          ~src:image ~spos:(0, 0) ~size:(6, 7);
         Canvas.show c
     | _ -> ()
   in
@@ -358,10 +358,10 @@ let start best_score game_finished =
 
   let calculate_grass_spawn_interval () =
     let min_interval =
-      dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+      dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
     in
     let max_interval =
-      dec_max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+      dec_max_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
     in
     Random.float (max_interval -. min_interval) +. min_interval
   in
@@ -397,12 +397,12 @@ let start best_score game_finished =
   in
 
   let spawn_cloud () =
-    let vel = Random.float 5. +. 12. in
+    let vel = (speed /. 10.) +. (!score /. 1000.) in
     add_cloud vel
   in
 
   let spawn_star () =
-    let vel = Random.float 10. in
+    let vel = (speed /. 20.) +. (!score /. 1000.) in
     add_star vel
   in
 
