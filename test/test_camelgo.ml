@@ -40,6 +40,7 @@ let test_decoration_types _ =
   let star = create_star 100. 100. 0. 0. in
   let cloud = create_cloud 100. 100. 0. 0. in
   let grass = create_grass 100. 100. 0. 0. in
+  let bump = create_bump 100. 100. 0. 0. in
   assert_bool "Star should be of type Star1 or Star2"
     (match get_dec_type star with
     | 2 | 3 -> true
@@ -51,6 +52,10 @@ let test_decoration_types _ =
   assert_bool "Grass should be of type Grass1 or Grass2"
     (match get_dec_type grass with
     | 0 | 1 -> true
+    | _ -> false);
+  assert_bool "Bump should be of type Bump1 or Bump2"
+    (match get_dec_type bump with
+    | 7 | 8 -> true
     | _ -> false)
 
 (* Test decoration velocities within expected ranges *)

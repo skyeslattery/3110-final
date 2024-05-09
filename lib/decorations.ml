@@ -6,6 +6,8 @@ type decoration_type =
   | Cloud1
   | Cloud2
   | Cloud3
+  | Bump1
+  | Bump2
 
 type t = {
   mutable pos : float * float;
@@ -34,6 +36,11 @@ let create_grass x y vx vy =
   let pos = adjust_position x y in
   { pos; vel = (vx, vy); style = (if rand = 0 then Grass1 else Grass2) }
 
+let create_bump x y vx vy =
+  let rand = Random.int 2 in
+  let pos = (x, y +. 14.) in
+  { pos; vel = (vx, vy); style = (if rand = 0 then Bump1 else Bump2) }
+
 let update_dec dec x y =
   dec.pos <- (x, y);
   dec
@@ -52,3 +59,5 @@ let get_dec_type dec =
   | Cloud1 -> 4
   | Cloud2 -> 5
   | Cloud3 -> 6
+  | Bump1 -> 7
+  | Bump2 -> 8

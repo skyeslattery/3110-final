@@ -33,6 +33,8 @@ let cloud2_img = { image_opt = None }
 let cloud3_img = { image_opt = None }
 let star1_img = { image_opt = None }
 let star2_img = { image_opt = None }
+let bump1_img = { image_opt = None }
+let bump2_img = { image_opt = None }
 
 let start best_score game_finished =
   Backend.init ();
@@ -171,6 +173,8 @@ let start best_score game_finished =
   let cloud3_image = Canvas.createOffscreenFromPNG "./assets/cloud3.png" in
   let star1_image = Canvas.createOffscreenFromPNG "./assets/star1.png" in
   let star2_image = Canvas.createOffscreenFromPNG "./assets/star2.png" in
+  let bump1_image = Canvas.createOffscreenFromPNG "./assets/bump1.png" in
+  let bump2_image = Canvas.createOffscreenFromPNG "./assets/bump2.png" in
 
   let load_bg canvas =
     match bg_img.image_opt with
@@ -235,8 +239,8 @@ let start best_score game_finished =
         Canvas.show c
     | _ -> ()
   in
-  let draw_cloud1 c g2 =
-    let x, y = get_dec_pos g2 in
+  let draw_cloud1 c c1 =
+    let x, y = get_dec_pos c1 in
     match cloud1_img.image_opt with
     | Some image ->
         Canvas.blit ~dst:c
@@ -245,8 +249,8 @@ let start best_score game_finished =
         Canvas.show c
     | _ -> ()
   in
-  let draw_cloud2 c g2 =
-    let x, y = get_dec_pos g2 in
+  let draw_cloud2 c c2 =
+    let x, y = get_dec_pos c2 in
     match cloud2_img.image_opt with
     | Some image ->
         Canvas.blit ~dst:c
@@ -255,8 +259,8 @@ let start best_score game_finished =
         Canvas.show c
     | _ -> ()
   in
-  let draw_cloud3 c g2 =
-    let x, y = get_dec_pos g2 in
+  let draw_cloud3 c c3 =
+    let x, y = get_dec_pos c3 in
     match cloud3_img.image_opt with
     | Some image ->
         Canvas.blit ~dst:c
@@ -265,8 +269,8 @@ let start best_score game_finished =
         Canvas.show c
     | _ -> ()
   in
-  let draw_star1 c g2 =
-    let x, y = get_dec_pos g2 in
+  let draw_star1 c s1 =
+    let x, y = get_dec_pos s1 in
     match star1_img.image_opt with
     | Some image ->
         Canvas.blit ~dst:c
@@ -275,13 +279,33 @@ let start best_score game_finished =
         Canvas.show c
     | _ -> ()
   in
-  let draw_star2 c g2 =
-    let x, y = get_dec_pos g2 in
+  let draw_star2 c s2 =
+    let x, y = get_dec_pos s2 in
     match star2_img.image_opt with
     | Some image ->
         Canvas.blit ~dst:c
           ~dpos:(int_of_float x, int_of_float y)
           ~src:image ~spos:(0, 0) ~size:(6, 7);
+        Canvas.show c
+    | _ -> ()
+  in
+  let draw_bump1 c b1 =
+    let x, y = get_dec_pos b1 in
+    match bump1_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(9, 3);
+        Canvas.show c
+    | _ -> ()
+  in
+  let draw_bump2 c b2 =
+    let x, y = get_dec_pos b2 in
+    match bump2_img.image_opt with
+    | Some image ->
+        Canvas.blit ~dst:c
+          ~dpos:(int_of_float x, int_of_float y)
+          ~src:image ~spos:(0, 0) ~size:(14, 3);
         Canvas.show c
     | _ -> ()
   in
@@ -294,14 +318,18 @@ let start best_score game_finished =
     | 3 -> draw_star2 c dec
     | 4 -> draw_cloud1 c dec
     | 5 -> draw_cloud2 c dec
-    | _ -> draw_cloud3 c dec
+    | 6 -> draw_cloud3 c dec
+    | 7 -> draw_bump1 c dec
+    | 8 -> draw_bump2 c dec
+    | _ -> failwith "unrecognized decoration type"
   in
 
   let draw_obstacle c obstacle =
     match get_type obstacle with
     | 0 -> draw_short c obstacle
     | 1 -> draw_tall c obstacle
-    | _ -> draw_normal c obstacle
+    | 2 -> draw_normal c obstacle
+    | _ -> failwith "unrecognized obstacle type"
   in
 
   let rec draw_obstacles canvas (obstacles : Obstacle.t list) =
@@ -328,6 +356,10 @@ let start best_score game_finished =
     decorations := create_grass 800. 183. (vel *. -1.) 0. :: !decorations
   in
 
+  let add_bump vel =
+    decorations := create_bump 800. 183. (vel *. -1.) 0. :: !decorations
+  in
+
   let add_cloud vel =
     decorations :=
       create_cloud 800. (Random.float 100.) (vel *. -1.) 0. :: !decorations
@@ -346,7 +378,7 @@ let start best_score game_finished =
   (* Factor by which obstacle speed increases with score *)
   let speed_increase_factor = 1.05 in
 
-  let calculate_ob_spawn_interval () =
+  let ob_spawn_interval () =
     let min_interval =
       ob_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
     in
@@ -356,7 +388,7 @@ let start best_score game_finished =
     Random.float (max_interval -. min_interval) +. min_interval
   in
 
-  let calculate_grass_spawn_interval () =
+  let grass_spawn_interval () =
     let min_interval =
       dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
     in
@@ -365,8 +397,17 @@ let start best_score game_finished =
     in
     Random.float (max_interval -. min_interval) +. min_interval
   in
+  let bump_spawn_interval () =
+    let min_interval =
+      dec_min_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
+    in
+    let max_interval =
+      dec_max_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
+    in
+    Random.float (max_interval -. min_interval) +. min_interval
+  in
 
-  let calculate_cloud_spawn_interval () =
+  let cloud_spawn_interval () =
     let min_interval =
       dec_min_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
     in
@@ -376,7 +417,7 @@ let start best_score game_finished =
     Random.float (max_interval -. min_interval) +. min_interval
   in
 
-  let calculate_star_spawn_interval () =
+  let star_spawn_interval () =
     let min_interval =
       dec_min_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
     in
@@ -394,6 +435,10 @@ let start best_score game_finished =
   let spawn_grass () =
     let vel = speed +. (!score /. 10.) in
     add_grass vel
+  in
+  let spawn_bump () =
+    let vel = speed +. (!score /. 10.) in
+    add_bump vel
   in
 
   let spawn_cloud () =
@@ -430,18 +475,16 @@ let start best_score game_finished =
       update_player player_state pl_new_x pl_new_y pl_vx pl_new_vy
     in
 
-    if Random.float 1.0 < dt /. calculate_ob_spawn_interval () then
-      spawn_obstacle ();
+    if Random.float 1.0 < dt /. ob_spawn_interval () then spawn_obstacle ();
     obstacles := update_obstacles !obstacles;
 
-    if Random.float 1.0 < dt /. calculate_grass_spawn_interval () then
-      spawn_grass ();
+    if Random.float 1.0 < dt /. grass_spawn_interval () then spawn_grass ();
 
-    if Random.float 1.0 < dt /. calculate_cloud_spawn_interval () then
-      spawn_cloud ();
+    if Random.float 1.0 < dt /. bump_spawn_interval () then spawn_bump ();
 
-    if Random.float 1.0 < dt /. calculate_star_spawn_interval () then
-      spawn_star ();
+    if Random.float 1.0 < dt /. cloud_spawn_interval () then spawn_cloud ();
+
+    if Random.float 1.0 < dt /. star_spawn_interval () then spawn_star ();
     decorations := update_decorations !decorations;
 
     if check_collisions player_state !obstacles then (
@@ -492,6 +535,11 @@ let start best_score game_finished =
   @@ React.E.map
        (fun g2_img -> grass2_img.image_opt <- Some g2_img)
        grass2_image;
+
+  retain_event
+  @@ React.E.map (fun b1_img -> bump1_img.image_opt <- Some b1_img) bump1_image;
+  retain_event
+  @@ React.E.map (fun b2_img -> bump2_img.image_opt <- Some b2_img) bump2_image;
 
   retain_event
   @@ React.E.map

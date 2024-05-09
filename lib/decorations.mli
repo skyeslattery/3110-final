@@ -6,6 +6,8 @@ type decoration_type =
   | Cloud1
   | Cloud2
   | Cloud3
+  | Bump1
+  | Bump2
 
 type t = {
   mutable pos : float * float;
@@ -23,3 +25,4 @@ val get_dec_y : t -> float
 val get_dec_pos : t -> float * float
 val get_dec_vel : t -> float * float
 val get_dec_type : t -> int
+val create_bump : float -> float -> float -> float -> t
