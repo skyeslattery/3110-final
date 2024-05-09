@@ -20,7 +20,7 @@ type state = { mutable image_opt : Canvas.t option }
 
 let bg_img = { image_opt = None }
 let player_img = { image_opt = None }
-let camel_images = Array.init 6 (fun _ -> { image_opt = None })
+let camel_images = Array.init 7 (fun _ -> { image_opt = None })
 (* Initialize an array for the camel images *)
 
 let grass1_img = { image_opt = None }
@@ -66,6 +66,7 @@ let start best_score game_finished =
   let camel4_image = Canvas.createOffscreenFromPNG "./assets/camel4.png" in
   let camel5_image = Canvas.createOffscreenFromPNG "./assets/camel5.png" in
   let camel6_image = Canvas.createOffscreenFromPNG "./assets/camel6.png" in
+  let camel7_image = Canvas.createOffscreenFromPNG "./assets/camel7.png" in
 
   retain_event
   @@ React.E.map
@@ -91,19 +92,33 @@ let start best_score game_finished =
   @@ React.E.map
        (fun img -> camel_images.(5).image_opt <- Some img)
        camel6_image;
+  retain_event
+  @@ React.E.map
+       (fun img -> camel_images.(6).image_opt <- Some img)
+       camel7_image;
 
   let draw_player canvas player_state =
     if is_alive player_state then
-      let x, y = player_state.pos in
-      let index = int_of_float (!score /. 2.) mod 6 in
-      (* Cycle through camel images *)
-      match camel_images.(index).image_opt with
-      | Some image ->
-          Canvas.blit ~dst:c
-            ~dpos:(int_of_float x, int_of_float y)
-            ~src:image ~spos:(0, 0) ~size:(40, 30);
-          Canvas.show canvas
-      | _ -> ()
+      if !grounded then
+        let x, y = player_state.pos in
+        let index = int_of_float (!score /. 2.) mod 6 in
+        (* Cycle through camel images *)
+        match camel_images.(index).image_opt with
+        | Some image ->
+            Canvas.blit ~dst:c
+              ~dpos:(int_of_float x, int_of_float y)
+              ~src:image ~spos:(0, 0) ~size:(40, 30);
+            Canvas.show canvas
+        | _ -> ()
+      else
+        let x, y = player_state.pos in
+        match camel_images.(6).image_opt with
+        | Some image ->
+            Canvas.blit ~dst:c
+              ~dpos:(int_of_float x, int_of_float y)
+              ~src:image ~spos:(0, 0) ~size:(40, 30);
+            Canvas.show canvas
+        | _ -> ()
   in
 
   let rec update_obstacles (obstacles : Obstacle.t list) =
