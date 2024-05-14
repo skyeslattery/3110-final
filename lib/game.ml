@@ -38,9 +38,9 @@ let bump2_img = { image_opt = None }
 
 let start best_score game_finished =
   Backend.init ();
+  obstacles := [];
   score := 0.0;
   grounded := true;
-  obstacles := [ create_obstacle 800. 183. (-170.) 0. ];
   decorations := [ create_grass 1000. 183. (-170.) 0. ];
   decorations :=
     create_star (Random.float 200. +. 400.) 25. (-8.5) 0. :: !decorations;
