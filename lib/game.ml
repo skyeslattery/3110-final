@@ -298,7 +298,7 @@ let add_star vel =
     create_star 800. (Random.float 25.) (vel *. -1.) 0. :: !decorations
 
 let ob_min_spawn_interval = 8.
-let ob_max_spawn_interval = 10.
+let ob_max_spawn_interval = 9.
 let dec_min_spawn_interval = 2.
 let dec_max_spawn_interval = 4.
 let speed = 170.
@@ -377,20 +377,15 @@ let draw_score canvas =
   Canvas.setLineWidth canvas 15.;
   Canvas.fillText canvas (string_of_int (int_of_float !score)) (740., 24.)
 
-let start best_score game_finished =
-  let player_state = init_game_state best_score in
+let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png"
+let camel2_image = Canvas.createOffscreenFromPNG "./assets/camel2.png"
+let camel3_image = Canvas.createOffscreenFromPNG "./assets/camel3.png"
+let camel4_image = Canvas.createOffscreenFromPNG "./assets/camel4.png"
+let camel5_image = Canvas.createOffscreenFromPNG "./assets/camel5.png"
+let camel6_image = Canvas.createOffscreenFromPNG "./assets/camel6.png"
+let camel7_image = Canvas.createOffscreenFromPNG "./assets/camel7.png"
 
-  let c = init_canvas width height in
-
-  Canvas.show c;
-
-  let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png" in
-  let camel2_image = Canvas.createOffscreenFromPNG "./assets/camel2.png" in
-  let camel3_image = Canvas.createOffscreenFromPNG "./assets/camel3.png" in
-  let camel4_image = Canvas.createOffscreenFromPNG "./assets/camel4.png" in
-  let camel5_image = Canvas.createOffscreenFromPNG "./assets/camel5.png" in
-  let camel6_image = Canvas.createOffscreenFromPNG "./assets/camel6.png" in
-  let camel7_image = Canvas.createOffscreenFromPNG "./assets/camel7.png" in
+let retain_camel_events =
   retain_event
   @@ React.E.map
        (fun img -> camel_images.(0).image_opt <- Some img)
@@ -418,7 +413,13 @@ let start best_score game_finished =
   retain_event
   @@ React.E.map
        (fun img -> camel_images.(6).image_opt <- Some img)
-       camel7_image;
+       camel7_image
+
+let start best_score game_finished =
+  let player_state = init_game_state best_score in
+  let c = init_canvas width height in
+  Canvas.show c;
+  retain_camel_events;
 
   let bg_image = Canvas.createOffscreenFromPNG "./assets/bg.png" in
 
