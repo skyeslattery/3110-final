@@ -12,3 +12,5 @@ let collision player (obstacle : Obstacle.t) ob_height ob_width =
   && pl_x <= ob_x +. ob_width
   && pl_y +. pl_height >= ob_y
   && pl_y <= ob_y +. ob_height
+
+(** test comment *)
