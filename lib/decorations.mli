@@ -10,7 +10,8 @@ type decoration_type =
   | Bump1
   | Bump2
 
-(* The type of a decoration object. *)
+(* The type of a decoration object with position and velocity vectors [pos] and [vel] and 
+  style [style]. *)
 type t = {
   mutable pos : float * float;
   vel : float * float;
