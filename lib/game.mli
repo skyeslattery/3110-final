@@ -22,7 +22,6 @@ val decorations : Decorations.t list ref
 (* Value storing the player's score. *)
 val score : float ref
 
-
 (* The type of a game sprite with image option [image_opt]. *)
 type state = { mutable image_opt : OcamlCanvas.V1.Canvas.t option }
 

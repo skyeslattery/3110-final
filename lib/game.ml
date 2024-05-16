@@ -3,6 +3,7 @@ open Obstacle
 open Player
 open Collision
 open Decorations
+open Spawns
 
 let gravity_acceleration = 240.
 
@@ -81,8 +82,8 @@ let init_game_state best_score =
   create_player best_score
 
 let init_canvas width height =
-  Canvas.createOnscreen ~title:"Camel\n  GO" ~pos:(300, 200)
-    ~size:(width, height) ()
+  Canvas.createOnscreen ~title:"CamelGO" ~pos:(300, 200) ~size:(width, height)
+    ()
 
 let rec update_obstacles (obstacles : Obstacle.t list) =
   match obstacles with
@@ -297,60 +298,6 @@ let add_star vel =
   decorations :=
     create_star 800. (Random.float 25.) (vel *. -1.) 0. :: !decorations
 
-let ob_min_spawn_interval = 8.
-let ob_max_spawn_interval = 9.
-let dec_min_spawn_interval = 2.
-let dec_max_spawn_interval = 4.
-let speed = 170.
-
-(* Factor by which obstacle speed increases with score *)
-let speed_increase_factor = 1.05
-
-let ob_spawn_interval () =
-  let min_interval =
-    ob_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
-  in
-  let max_interval =
-    ob_max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
-  in
-  Random.float (max_interval -. min_interval) +. min_interval
-
-let grass_spawn_interval () =
-  let min_interval =
-    dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
-  in
-  let max_interval =
-    dec_max_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
-  in
-  Random.float (max_interval -. min_interval) +. min_interval
-
-let bump_spawn_interval () =
-  let min_interval =
-    dec_min_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
-  in
-  let max_interval =
-    dec_max_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
-  in
-  Random.float (max_interval -. min_interval) +. min_interval
-
-let cloud_spawn_interval () =
-  let min_interval =
-    dec_min_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
-  in
-  let max_interval =
-    dec_max_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
-  in
-  Random.float (max_interval -. min_interval) +. min_interval
-
-let star_spawn_interval () =
-  let min_interval =
-    dec_min_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
-  in
-  let max_interval =
-    dec_max_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
-  in
-  Random.float (max_interval -. min_interval) +. min_interval
-
 let spawn_obstacle () =
   let vel = speed +. (!score /. 10.) in
   add_obstacle vel
@@ -522,16 +469,16 @@ let draw_frame c (player_state : Player.t) best_score game_finished =
     update_player player_state pl_new_x pl_new_y pl_vx pl_new_vy
   in
 
-  if Random.float 1.0 < dt /. ob_spawn_interval () then spawn_obstacle ();
+  if Random.float 1.0 < dt /. ob_spawn_interval !score then spawn_obstacle ();
   obstacles := update_obstacles !obstacles;
 
-  if Random.float 1.0 < dt /. grass_spawn_interval () then spawn_grass ();
+  if Random.float 1.0 < dt /. grass_spawn_interval !score then spawn_grass ();
 
-  if Random.float 1.0 < dt /. bump_spawn_interval () then spawn_bump ();
+  if Random.float 1.0 < dt /. bump_spawn_interval !score then spawn_bump ();
 
-  if Random.float 1.0 < dt /. cloud_spawn_interval () then spawn_cloud ();
+  if Random.float 1.0 < dt /. cloud_spawn_interval !score then spawn_cloud ();
 
-  if Random.float 1.0 < dt /. star_spawn_interval () then spawn_star ();
+  if Random.float 1.0 < dt /. star_spawn_interval !score then spawn_star ();
   decorations := update_decorations !decorations;
 
   if check_collisions player_state !obstacles then (

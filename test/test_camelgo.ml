@@ -5,6 +5,7 @@ open Player
 open Obstacle
 open Decorations
 open Menu
+open Spawns
 
 (* Helper function to simplify test writing *)
 let almost_equal a b = abs_float (a -. b) < 1e-6
@@ -17,11 +18,7 @@ let test_player_jump _ =
   let player = create_player 0 in
   Player.jump player;
   assert_bool "Player velocity Y should be negative after jumping"
-    (snd player.vel < 0.)
-
-let test_player_jump_alive _ =
-  let player = create_player 0 in
-  Player.jump player;
+    (snd player.vel < 0.);
   assert_bool "Player should be alive after jumping" (is_alive player)
 
 (* Obstacle and collision detection tests *)
@@ -128,20 +125,14 @@ let test_normal_hitbox _ =
                (float_of_int (get_width ob))))
   done
 
-let test_ob_pos_get _ =
+let test_ob_get _ =
   let obstacle = create_obstacle 50. 173. 0. 0. in
-  assert_equal (get_pos obstacle) (get_x obstacle, get_y obstacle)
-
-let test_ob_vel_get _ =
-  let obstacle = create_obstacle 50. 173. 0. 0. in
+  assert_equal (get_pos obstacle) (get_x obstacle, get_y obstacle);
   assert_equal (get_vel obstacle) (0., 0.)
 
-let test_player_pos_get _ =
+let test_player_get _ =
   let pl = create_player 0 in
-  assert_equal (50., 173.) (get_pl_x pl, get_pl_y pl)
-
-let test_player_vel_get _ =
-  let pl = create_player 0 in
+  assert_equal (50., 173.) (get_pl_x pl, get_pl_y pl);
   assert_equal (0., 0.) (get_pl_vx pl, get_pl_vy pl)
 
 let test_player_alive _ =
@@ -253,6 +244,30 @@ let test_obstacle_type_and_adjustment _ =
           assert_bool "Tall type adjustment correct" (almost_equal y 91.)
       | _ -> assert_failure "Unknown obstacle type")
     obstacles
+
+let test_obstacle_spawn_interval _ =
+  let score = 0. in
+  let initial_interval = ob_spawn_interval score in
+  let new_score = 100. in
+  let adjusted_interval = ob_spawn_interval new_score in
+  assert_bool "Obstacle spawn interval should decrease with higher score"
+    (adjusted_interval < initial_interval)
+
+let test_ob_frequency_increase _ =
+  let score = 0. in
+  let initial_obstacle_freq = 1. /. ob_spawn_interval score in
+  let new_score = 1000. in
+  let new_obstacle_freq = 1. /. ob_spawn_interval new_score in
+  assert_bool "Obstacle spawn frequency should increase with score"
+    (new_obstacle_freq > initial_obstacle_freq)
+
+let test_dec_frequency_increase _ =
+  let score = 0. in
+  let initial_decoration_freq = 1. /. star_spawn_interval score in
+  let new_score = 1000. in
+  let new_decoration_freq = 1. /. star_spawn_interval new_score in
+  assert_bool "Decoration spawn frequency should increase with score"
+    (new_decoration_freq > initial_decoration_freq)
 
 let test_obstacle_height _ =
   let obstacles = List.init 10 (fun _ -> create_obstacle 100. 100. 0. 0.) in
@@ -436,12 +451,76 @@ let test_multiple_game_sessions _ =
               score_ref := second_game_score)));
   assert_equal ~printer:string_of_int 20 !score_ref
 
+let test_high_score_influence _ =
+  let high_score = 5000. in
+  assert_bool "High score significantly reduces obstacle interval"
+    (ob_spawn_interval high_score < 1.);
+  assert_bool "High score significantly reduces decoration interval"
+    (grass_spawn_interval high_score < 1.)
+
+let test_minimum_spawn_interval _ =
+  let extreme_score = 100000. in
+  assert_bool "Obstacle interval should always be above 0"
+    (ob_spawn_interval extreme_score > 0.0);
+  assert_bool "Decoration interval should always be above 0"
+    (grass_spawn_interval extreme_score > 0.0)
+
+let test_randomness_impact _ =
+  let score = 100. in
+  Random.init 50;
+  let interval1 = ob_spawn_interval score in
+  Random.init 50;
+  let interval2 = ob_spawn_interval score in
+  assert_equal interval1 interval2
+    ~msg:"Spawn intervals should be consistent with same random seed"
+
+let test_score_effect_each_type _ =
+  let score = 250. in
+  let ob_interval = ob_spawn_interval score in
+  let grass_interval = grass_spawn_interval score in
+  let bump_interval = bump_spawn_interval score in
+  let cloud_interval = cloud_spawn_interval score in
+  let star_interval = star_spawn_interval score in
+  assert_bool "Different types have different intervals based on score"
+    (ob_interval <> grass_interval
+    && bump_interval <> cloud_interval
+    && star_interval <> grass_interval)
+
+let test_interval_range_constraints _ =
+  let score = 200. in
+  let min_allowed_interval = 0.5 in
+  let max_allowed_interval = 10.0 in
+  let interval = ob_spawn_interval score in
+  assert_bool
+    "Spawn interval should not fall below the minimum allowed interval"
+    (interval >= min_allowed_interval);
+  assert_bool "Spawn interval should not exceed the maximum allowed interval"
+    (interval <= max_allowed_interval)
+
+let test_differences_across_types _ =
+  let score = 500. in
+  let ob_interval = ob_spawn_interval score in
+  let cloud_interval = cloud_spawn_interval score in
+  let grass_interval = grass_spawn_interval score in
+  assert_bool "Grass should spawn more frequently than obstacles"
+    (grass_interval < ob_interval);
+  assert_bool "Clouds should spawn less frequently than obstacles"
+    (cloud_interval > ob_interval);
+  assert_bool "Grass should spawn more frequently than clouds"
+    (cloud_interval > grass_interval)
+
+let test_differences_across_decorations _ =
+  let score = 1000. in
+  let bump_interval = bump_spawn_interval score in
+  let grass_interval = grass_spawn_interval score in
+  assert_bool "Grass should spawn more frequently than obstacles"
+    (grass_interval < bump_interval)
+
 (* Comprehensive test suite *)
 let tests =
   "test suite"
   >::: [
          "test player jump" >:: test_player_jump;
-         "test player jumping is alive" >:: test_player_jump_alive;
          "test obstacle collision" >:: test_obstacle_collision;
          "test obstacle no collision" >:: test_obstacle_no_collision;
          "test edge collision" >:: test_collision_edge;
@@ -457,10 +536,8 @@ let tests =
          >:: test_obstacle_type_and_adjustment;
          "test obstacle heights" >:: test_obstacle_height;
          "test obstacle widths" >:: test_obstacle_width;
-         "test player get pos" >:: test_player_pos_get;
-         "test player get vel" >:: test_player_vel_get;
-         "test obstacle get pos" >:: test_ob_pos_get;
-         "test obstacle get vel" >:: test_ob_vel_get;
+         "test obstacle getters" >:: test_ob_get;
+         "test player getters" >:: test_player_get;
          "test player is alive" >:: test_player_alive;
          "players vx is not affected by jumping" >:: test_player_jump_vx;
          "players vy is lowered by jumping" >:: test_player_jump_vy;
@@ -484,6 +561,22 @@ let tests =
          "test grass type" >:: test_grass_type;
          "test star type" >:: test_star_type;
          "test bump type" >:: test_bump_type;
+         "obstacles spawn more frequently as score increases"
+         >:: test_ob_frequency_increase;
+         "decorations spawn more frequently as score increases"
+         >:: test_dec_frequency_increase;
+         "spawn interval should decrease over time"
+         >:: test_obstacle_spawn_interval;
+         "test very high scores influence" >:: test_high_score_influence;
+         "test minimum spawn interval" >:: test_minimum_spawn_interval;
+         "test randomness impact" >:: test_randomness_impact;
+         "test score effect on each type" >:: test_score_effect_each_type;
+         "test constraints on spawn interval"
+         >:: test_interval_range_constraints;
+         "interval differences across spawn types"
+         >:: test_differences_across_types;
+         "interval differences across different decorations"
+         >:: test_differences_across_decorations;
        ]
 
 let _ = run_test_tt_main tests
