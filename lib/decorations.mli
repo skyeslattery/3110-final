@@ -1,3 +1,5 @@
+(**The type of a decoration representation whose elements are type
+   decoration_type*)
 type decoration_type =
   | Star1
   | Star2
@@ -14,8 +16,11 @@ type t = {
   vel : float * float;
   style : decoration_type;
 }
+(**The type of a decoration whose elements are type t*)
 
 val adjust_position : 'a -> float -> 'a * float
+(**Adjust position x y adjusts the *)
+
 val create_star : float -> float -> float -> float -> t
 val create_cloud : float -> float -> float -> float -> t
 val create_grass : float -> float -> float -> float -> t
