@@ -20,9 +20,9 @@ val create_star : float -> float -> float -> float -> t
 val create_cloud : float -> float -> float -> float -> t
 val create_grass : float -> float -> float -> float -> t
 val update_dec : t -> float -> float -> t
+val create_bump : float -> float -> float -> float -> t
 val get_dec_x : t -> float
 val get_dec_y : t -> float
 val get_dec_pos : t -> float * float
 val get_dec_vel : t -> float * float
 val get_dec_type : t -> int
-val create_bump : float -> float -> float -> float -> t
