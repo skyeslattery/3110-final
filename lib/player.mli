@@ -1,4 +1,5 @@
-(* The type of a player object. *)
+(* The type of a player object with position and velocity vectors [pos] and [vel], 
+  a life status [is_alive], and best recorded score [best_score]. *)
 type t = {
   mutable pos : float * float;
   mutable vel : float * float;
