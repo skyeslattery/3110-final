@@ -1,5 +1,5 @@
-(* The type of a player object with position and velocity vectors [pos] and [vel], 
-  a life status [is_alive], and best recorded score [best_score]. *)
+(* The type of a player object with position and velocity vectors [pos] and
+   [vel], a life status [is_alive], and best recorded score [best_score]. *)
 type t = {
   mutable pos : float * float;
   mutable vel : float * float;
@@ -19,8 +19,8 @@ val jump_impulse : float
 (* Makes the player jump. *)
 val jump : t -> unit
 
-(* Draws the player on the canvas. *)
-val draw_box : OcamlCanvas.V1.Canvas.t -> t -> unit
+(* Draws the player as a box on the canvas. For testing. *)
+(* val draw_box : OcamlCanvas.V1.Canvas.t -> t -> unit *)
 
 (* Returns a tuple [(x, y)] representing the player's position. *)
 val get_pl_pos : t -> float * float
@@ -37,7 +37,8 @@ val get_pl_vx : t -> float
 (* Returns the y-component of the player's velocity. *)
 val get_pl_vy : t -> float
 
-(* Returns [true] if the player is still alive (i.e., hasn't hit an object yet). *)
+(* Returns [true] if the player is still alive (i.e., hasn't hit an object
+   yet). *)
 val is_alive : t -> bool
 
 (* Returns the highest score this player has been able to achieve so far. *)

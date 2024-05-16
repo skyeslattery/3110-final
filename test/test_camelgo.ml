@@ -64,8 +64,69 @@ let test_collision_corner _ =
 let test_collision_negative _ =
   let player = create_player 0 in
   let obstacle = create_obstacle (-10.) (-10.) 0. 0. in
-  assert_bool "Player should collide with obstacle negative f"
+  assert_bool "Player should collide with obstacle even negative"
     (collision player obstacle 200. 200.)
+
+let test_not_collision_negative _ =
+  let player = create_player 0 in
+  let obstacle = create_obstacle (-53.) (-173.) 0. 0. in
+  assert_bool
+    "Player should not collide with obstacle at negative player position"
+    (not (collision player obstacle 50. 50.))
+
+let test_tall_hitbox _ =
+  let player = create_player 100 in
+  Random.self_init ();
+  for i = 1 to 20 do
+    let ob = create_obstacle 50. 209. 0. 0. in
+    assert_bool
+      ("Tall should collide, iteration: " ^ string_of_int i)
+      (match get_type ob with
+      | 2 ->
+          collision player ob
+            (float_of_int (get_height ob))
+            (float_of_int (get_width ob))
+      | _ -> true)
+  done
+
+let test_short_hitbox _ =
+  let player = create_player 100 in
+  Random.self_init ();
+  for i = 1 to 20 do
+    let ob = create_obstacle 20. 173. 0. 0. in
+    assert_bool
+      ("Only short should collide, iteration: " ^ string_of_int i)
+      (match get_type ob with
+      | 0 ->
+          collision player ob
+            (float_of_int (get_height ob))
+            (float_of_int (get_width ob))
+      | _ ->
+          not
+            (collision player ob
+               (float_of_int (get_height ob))
+               (float_of_int (get_width ob))))
+  done
+
+let test_normal_hitbox _ =
+  let player = create_player 100 in
+  Random.self_init ();
+  for i = 1 to 20 do
+    let ob = create_obstacle 50. 200. 0. 0. in
+    assert_bool
+      ("Only tall and normal cacti should collide, iteration: "
+     ^ string_of_int i)
+      (match get_type ob with
+      | 1 | 2 ->
+          collision player ob
+            (float_of_int (get_height ob))
+            (float_of_int (get_width ob))
+      | _ ->
+          not
+            (collision player ob
+               (float_of_int (get_height ob))
+               (float_of_int (get_width ob))))
+  done
 
 let test_ob_pos_get _ =
   let obstacle = create_obstacle 50. 173. 0. 0. in
@@ -386,6 +447,10 @@ let tests =
          "test edge collision" >:: test_collision_edge;
          "test corner collision" >:: test_collision_corner;
          "test collision with negatives" >:: test_collision_negative;
+         "test not collision negative" >:: test_not_collision_negative;
+         "test tall cacti hitbox" >:: test_tall_hitbox;
+         "test short cacti hitbox" >:: test_short_hitbox;
+         "test normal cacti hitbox" >:: test_normal_hitbox;
          "test decoration types" >:: test_decoration_types;
          "test decoration velocities" >:: test_decoration_velocities;
          "test obstacle types and adjustments"

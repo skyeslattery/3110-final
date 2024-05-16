@@ -1,5 +1,3 @@
-open OcamlCanvas.V1
-
 type t = {
   mutable pos : float * float;
   mutable vel : float * float;
@@ -18,9 +16,8 @@ let update_player player x y vx vy =
 let jump_impulse = 175.
 let jump t = t.vel <- (fst t.vel, snd t.vel -. jump_impulse)
 
-let draw_box c player =
-  let x, y = player.pos in
-  Canvas.fillRect c ~pos:(x, y) ~size:(35., 30.)
+(* Testing function for hitboxes and collision let draw_box c player = let x, y
+   = player.pos in Canvas.fillRect c ~pos:(x, y) ~size:(35., 30.) *)
 
 let get_pl_pos player = player.pos
 let get_pl_x player = fst player.pos
