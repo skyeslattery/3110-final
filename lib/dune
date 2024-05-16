@@ -1,5 +1,3 @@
 (library
  (name camelgo)
- (libraries ocaml-canvas unix)
- (instrumentation
-  (backend bisect_ppx)))
+ (libraries ocaml-canvas unix))
