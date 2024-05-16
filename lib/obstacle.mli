@@ -4,7 +4,8 @@ type cactus_type =
   | Tall
   | Normal
 
-(* The type of a cactus obstacle. *)
+(* The type of a cactus obstacle with position and velocity vectors [pos] and [vel] and 
+  style [style] (affects hitbox detection). *)
 type t = {
   mutable pos : float * float;
   vel : float * float;
