@@ -22,6 +22,7 @@ let draw_box c player =
   let x, y = player.pos in
   Canvas.fillRect c ~pos:(x, y) ~size:(35., 30.)
 
+let get_pl_pos player = player.pos
 let get_x player = fst player.pos
 let get_y player = fst player.pos
 let get_vx player = fst player.vel

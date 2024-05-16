@@ -205,10 +205,28 @@ let test_decoration_movement _ =
   assert_bool "Decoration X should decrease by 5"
     (almost_equal (fst (get_dec_pos updated_decoration)) (initial_x -. 5.))
 
+let test_obstacle_movement _ =
+  let obstacle = create_obstacle 100. 100. (-5.) 0. in
+  let initial_x, _ = get_pos obstacle in
+  let updated_obstacle = update_obstacle obstacle (initial_x -. 5.) 100. in
+  assert_bool "Decoration X should decrease by 5"
+    (almost_equal (fst (get_pos updated_obstacle)) (initial_x -. 5.))
+
+let test_player_movement _ =
+  let player = create_player 0 in
+  let initial_x, _ = get_pl_pos player in
+  let updated_player = update_player player (initial_x -. 5.) 100. 5. 0. in
+  assert_bool "Decoration X should decrease by 5"
+    (almost_equal (fst (get_pl_pos updated_player)) (initial_x -. 5.))
+
 let test_menu_initialization _ =
   let initial_score = 100 in
   let menu_state = initialize_menu_state initial_score in
-  assert_equal initial_score menu_state.best_score;
+  assert_equal initial_score menu_state.best_score
+
+let test_menu_active _ =
+  let initial_score = 100 in
+  let menu_state = initialize_menu_state initial_score in
   assert_bool "Menu should be active on initialization" menu_state.is_active
 
 let test_background_image_loading _ =
@@ -240,17 +258,15 @@ let test_transition_from_menu_to_game _ =
   let score_ref = ref 100 in
   test_menu_start !score_ref (fun new_score ->
       score_ref := new_score;
-      test_game_start !score_ref (fun final_score ->
-          score_ref := final_score (* Game should increase score *)));
+      test_game_start !score_ref (fun final_score -> score_ref := final_score));
   assert_equal ~printer:string_of_int 110 !score_ref
 
 let test_transition_from_game_to_menu _ =
   let score_ref = ref 0 in
   test_game_start !score_ref (fun new_score ->
       score_ref := new_score;
-      (* Game increases score *)
-      test_menu_start !score_ref (fun final_score ->
-          score_ref := final_score (* Menu should not change score *)));
+
+      test_menu_start !score_ref (fun final_score -> score_ref := final_score));
   assert_equal ~printer:string_of_int 10
     !score_ref (* Check score consistency after menu *)
 
@@ -266,11 +282,8 @@ let test_score_reset_on_new_game _ =
 let test_continue_with_previous_score _ =
   let score_ref = ref 100 in
   test_menu_start !score_ref (fun new_score ->
-      (* Assume player chooses to continue with the previous score *)
       score_ref := new_score;
-      (* No reset, continue with 100 *)
-      test_game_start !score_ref (fun final_score ->
-          score_ref := final_score (* Increment score by game logic *)));
+      test_game_start !score_ref (fun final_score -> score_ref := final_score));
   assert_equal ~printer:string_of_int 110 !score_ref
 
 let test_reactivation_of_menu _ =
@@ -312,6 +325,8 @@ let tests =
          "test event retention" >:: test_event_retention;
          "test clear events" >:: test_clear_events;
          "test decoration movement" >:: test_decoration_movement;
+         "test obstacle movement" >:: test_obstacle_movement;
+         "test player movement" >:: test_player_movement;
          "menu initialization" >:: test_menu_initialization;
          "background image loading" >:: test_background_image_loading;
          "transition from menu to game" >:: test_transition_from_menu_to_game;
@@ -320,6 +335,7 @@ let tests =
          "continue with previous score" >:: test_continue_with_previous_score;
          "reactivation of menu" >:: test_reactivation_of_menu;
          "multiple game sessions handling" >:: test_multiple_game_sessions;
+         "test menu state is active on start" >:: test_menu_active;
          "test cloud type" >:: test_cloud_type;
          "test grass type" >:: test_grass_type;
          "test star type" >:: test_star_type;
