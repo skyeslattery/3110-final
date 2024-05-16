@@ -485,6 +485,19 @@ let retain_dec_events =
   retain_event
   @@ React.E.map (fun s2_img -> star2_img.image_opt <- Some s2_img) star2_image
 
+let retain_other_events =
+  retain_event
+  @@ React.E.map
+       (fun _ ->
+         Backend.stop ();
+         clear_events ())
+       Event.close;
+  retain_event
+  @@ React.E.map
+       (fun { Event.data = { Event.key; _ }; _ } ->
+         if key = KeyEscape then exit 0)
+       Event.key_down
+
 let draw_frame c (player_state : Player.t) best_score game_finished =
   let dt = 0.033 in
 
@@ -550,6 +563,7 @@ let start best_score game_finished =
   retain_camel_events;
   retain_dec_events;
   retain_ob_events;
+  retain_other_events;
 
   retain_event
   @@ React.E.map
@@ -567,13 +581,6 @@ let start best_score game_finished =
 
   retain_event
   @@ React.E.map
-       (fun _ ->
-         Backend.stop ();
-         clear_events ())
-       Event.close;
-
-  retain_event
-  @@ React.E.map
        (fun { Event.data = { Event.key; _ }; _ } ->
          if (key = KeySpacebar || key = KeyUpArrow) && !grounded then (
            Player.jump player_state;
@@ -582,15 +589,8 @@ let start best_score game_finished =
 
   retain_event
   @@ React.E.map
-       (fun { Event.data = { Event.key; _ }; _ } ->
-         if key = KeyEscape then exit 0)
-       Event.key_down;
-
-  retain_event
-  @@ React.E.map
        (fun _ ->
          if is_alive player_state then
            draw_frame c player_state best_score game_finished)
        Event.frame;
-
   Backend.run (fun () -> clear_events ())
