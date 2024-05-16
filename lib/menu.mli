@@ -13,7 +13,7 @@ type bg_state = { mutable image_opt : OcamlCanvas.V1.Canvas.t option }
 (* Value representing the active background. *)
 val bg_img : bg_state
 
-(* The type of the state of the menu. *)
+(* The type of a menu state with best recorded score [best_score] and active status [is_active]. *)
 type menu_state = {
   mutable best_score : int;
   mutable is_active : bool;
