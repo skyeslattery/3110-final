@@ -1,3 +1,5 @@
+ ## NOTE: Full screen does not work, seems to be an issue with the ocaml-canvas library. Please use in windowed mode. 
+
 To run the code, make sure opam is installed and you are able to run dune projects on your computer. Then download the code off and navigate to the root folder in your terminal.
 It might be something like:
 ``` sh
