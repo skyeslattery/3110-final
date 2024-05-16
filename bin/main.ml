@@ -1,4 +1,5 @@
-(* cloc --by-file --include-lang=OCaml . *)
+(* Authors: Skye Slattery (dss354), Clarence Dagins (cod8), Aakshay Gupta
+   (ag2226)*)
 open Camelgo.Main_controller
 open OcamlCanvas.V1
 
