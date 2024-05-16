@@ -37,6 +37,18 @@ let test_obstacle_no_collision _ =
   assert_bool "Player should not collide with distant obstacle"
     (not (collision player obstacle 22. 22.))
 
+let test_player_jump_vx _ =
+  let player = create_player 0 in
+  let vx = fst player.vel in
+  jump player;
+  assert_equal vx (fst player.vel)
+
+let test_player_jump_vy _ =
+  let player = create_player 0 in
+  let vy = snd player.vel in
+  jump player;
+  assert_bool "Players velocity is lowered by jumping" (vy > snd player.vel)
+
 let test_collision_edge _ =
   let player = create_player 0 in
   let obstacle = create_obstacle 50. 150. 0. 0. in
@@ -54,6 +66,26 @@ let test_collision_negative _ =
   let obstacle = create_obstacle (-10.) (-10.) 0. 0. in
   assert_bool "Player should collide with obstacle negative f"
     (collision player obstacle 200. 200.)
+
+let test_ob_pos_get _ =
+  let obstacle = create_obstacle 50. 173. 0. 0. in
+  assert_equal (get_pos obstacle) (get_x obstacle, get_y obstacle)
+
+let test_ob_vel_get _ =
+  let obstacle = create_obstacle 50. 173. 0. 0. in
+  assert_equal (get_vel obstacle) (0., 0.)
+
+let test_player_pos_get _ =
+  let pl = create_player 0 in
+  assert_equal (50., 173.) (get_pl_x pl, get_pl_y pl)
+
+let test_player_vel_get _ =
+  let pl = create_player 0 in
+  assert_equal (0., 0.) (get_pl_vx pl, get_pl_vy pl)
+
+let test_player_alive _ =
+  let pl = create_player 0 in
+  assert_bool "Player is alive upon creation" pl.is_alive
 
 let in_range value (min, max) = value >= min && value <= max
 
@@ -161,6 +193,44 @@ let test_obstacle_type_and_adjustment _ =
       | _ -> assert_failure "Unknown obstacle type")
     obstacles
 
+let test_obstacle_height _ =
+  let obstacles = List.init 10 (fun _ -> create_obstacle 100. 100. 0. 0.) in
+  List.iter
+    (fun ob ->
+      let h = get_height ob in
+      let type_id = get_type ob in
+      match type_id with
+      | 0 ->
+          (* Short *)
+          assert_equal 9 h
+      | 1 ->
+          (* Normal *)
+          assert_equal 22 h
+      | 2 ->
+          (* Tall *)
+          assert_equal 31 h
+      | _ -> assert_failure "Unknown obstacle type")
+    obstacles
+
+let test_obstacle_width _ =
+  let obstacles = List.init 10 (fun _ -> create_obstacle 100. 100. 0. 0.) in
+  List.iter
+    (fun ob ->
+      let w = get_width ob in
+      let type_id = get_type ob in
+      match type_id with
+      | 0 ->
+          (* Short *)
+          assert_equal 31 w
+      | 1 ->
+          (* Normal *)
+          assert_equal 15 w
+      | 2 ->
+          (* Tall *)
+          assert_equal 14 w
+      | _ -> assert_failure "Unknown obstacle type")
+    obstacles
+
 (* Additional tests for handling multiple collisions and game events *)
 let test_multiple_collisions _ =
   let player = create_player 0 in
@@ -209,14 +279,14 @@ let test_obstacle_movement _ =
   let obstacle = create_obstacle 100. 100. (-5.) 0. in
   let initial_x, _ = get_pos obstacle in
   let updated_obstacle = update_obstacle obstacle (initial_x -. 5.) 100. in
-  assert_bool "Decoration X should decrease by 5"
+  assert_bool "Obstacle X should decrease by 5"
     (almost_equal (fst (get_pos updated_obstacle)) (initial_x -. 5.))
 
 let test_player_movement _ =
   let player = create_player 0 in
   let initial_x, _ = get_pl_pos player in
   let updated_player = update_player player (initial_x -. 5.) 100. 5. 0. in
-  assert_bool "Decoration X should decrease by 5"
+  assert_bool "Player X should decrease by 5"
     (almost_equal (fst (get_pl_pos updated_player)) (initial_x -. 5.))
 
 let test_menu_initialization _ =
@@ -320,6 +390,15 @@ let tests =
          "test decoration velocities" >:: test_decoration_velocities;
          "test obstacle types and adjustments"
          >:: test_obstacle_type_and_adjustment;
+         "test obstacle heights" >:: test_obstacle_height;
+         "test obstacle widths" >:: test_obstacle_width;
+         "test player get pos" >:: test_player_pos_get;
+         "test player get vel" >:: test_player_vel_get;
+         "test obstacle get pos" >:: test_ob_pos_get;
+         "test obstacle get vel" >:: test_ob_vel_get;
+         "test player is alive" >:: test_player_alive;
+         "players vx is not affected by jumping" >:: test_player_jump_vx;
+         "players vy is lowered by jumping" >:: test_player_jump_vy;
          "test multiple collisions" >:: test_multiple_collisions;
          "test player after collision" >:: test_player_after_collision;
          "test event retention" >:: test_event_retention;

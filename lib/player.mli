@@ -11,9 +11,9 @@ val jump_impulse : float
 val jump : t -> unit
 val draw_box : OcamlCanvas.V1.Canvas.t -> t -> unit
 val get_pl_pos : t -> float * float
-val get_x : t -> float
-val get_y : t -> float
-val get_vx : t -> float
-val get_vy : t -> float
+val get_pl_x : t -> float
+val get_pl_y : t -> float
+val get_pl_vx : t -> float
+val get_pl_vy : t -> float
 val is_alive : t -> bool
 val best_score : t -> int

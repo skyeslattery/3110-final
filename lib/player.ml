@@ -23,9 +23,9 @@ let draw_box c player =
   Canvas.fillRect c ~pos:(x, y) ~size:(35., 30.)
 
 let get_pl_pos player = player.pos
-let get_x player = fst player.pos
-let get_y player = fst player.pos
-let get_vx player = fst player.vel
-let get_vy player = fst player.vel
+let get_pl_x player = fst player.pos
+let get_pl_y player = snd player.pos
+let get_pl_vx player = fst player.vel
+let get_pl_vy player = fst player.vel
 let is_alive player = player.is_alive
 let best_score player = player.best_score
