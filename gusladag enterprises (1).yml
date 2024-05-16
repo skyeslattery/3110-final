@@ -1,0 +1,27 @@
+---
+# Members of your group.
+group:
+  - name: Aakshay Gupta
+    netid: ag2226
+  - name: Skye Slattery
+    netid: dss354
+  - name: Clarence Dagins
+    netid: cod8
+# Your PM.
+pm:
+  name: Julia Zeng
+  netid: jwz28
+# Set to false if you don't want your gallery entry to be public.
+publish: true
+# Pithy title
+title: "CamlGame"
+# OK if this is a Cornell Github link, but public gallery viewers won't be able to see it.
+git-repo: "https://github.com/skyeslattery/3110-final/"
+# If you have no demo screencast, replace the url string with an empty string ""
+demo-video-url: ""
+# Write a short, attention-grabbing description of your project.
+desc: >
+  Our project is "CamlGame", a Camel/OCaml-themed variant of Google Chrome's 
+  offline dinosaur game. The user can navigate a pixelated camel through side-
+  scrolling scenery to avoid different obstacles, and their goal is to try and 
+  travel as far as possible without running out of lives.
