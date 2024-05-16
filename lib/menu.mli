@@ -1,7 +1,7 @@
 (* List of events to process in the game. *)
 val events : unit React.event list ref
 
-(* TBA *)
+(* Holds an event to be processed by the GUI. *)
 val retain_event : unit React.event -> unit
 
 (* Gets rid of all active events. *)
