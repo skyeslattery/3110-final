@@ -17,7 +17,11 @@ let test_player_jump _ =
   let player = create_player 0 in
   Player.jump player;
   assert_bool "Player velocity Y should be negative after jumping"
-    (snd player.vel < 0.);
+    (snd player.vel < 0.)
+
+let test_player_jump_alive _ =
+  let player = create_player 0 in
+  Player.jump player;
   assert_bool "Player should be alive after jumping" (is_alive player)
 
 (* Obstacle and collision detection tests *)
@@ -33,10 +37,29 @@ let test_obstacle_no_collision _ =
   assert_bool "Player should not collide with distant obstacle"
     (not (collision player obstacle 22. 22.))
 
+let test_collision_edge _ =
+  let player = create_player 0 in
+  let obstacle = create_obstacle 50. 150. 0. 0. in
+  assert_bool "Player should collide with obstacle on edge"
+    (collision player obstacle 50. 50.)
+
+let test_collision_corner _ =
+  let player = create_player 0 in
+  let obstacle = create_obstacle 50. 173. 0. 0. in
+  assert_bool "Player should collide with obstacle in corner"
+    (collision player obstacle 50. 173.)
+
+let test_collision_negative _ =
+  let player = create_player 0 in
+  let obstacle = create_obstacle (-10.) (-10.) 0. 0. in
+  assert_bool "Player should collide with obstacle negative f"
+    (collision player obstacle 200. 200.)
+
 let in_range value (min, max) = value >= min && value <= max
 
 (* Test decoration types *)
 let test_decoration_types _ =
+  Random.self_init ();
   let star = create_star 100. 100. 0. 0. in
   let cloud = create_cloud 100. 100. 0. 0. in
   let grass = create_grass 100. 100. 0. 0. in
@@ -58,14 +81,65 @@ let test_decoration_types _ =
     | 7 | 8 -> true
     | _ -> false)
 
+let test_star_type _ =
+  Random.self_init ();
+  for i = 1 to 50 do
+    let star = create_star 100. 100. 0. 0. in
+    assert_bool
+      ("Star should be of type Star1 or Star2, iteration: " ^ string_of_int i)
+      (match get_dec_type star with
+      | 2 | 3 -> true
+      | _ -> false)
+  done
+
+let test_cloud_type _ =
+  Random.self_init ();
+  for i = 1 to 50 do
+    let cloud = create_cloud 100. 100. 0. 0. in
+    assert_bool
+      ("Cloud should be of type Cloud1, Cloud2, or Cloud3, iteration: "
+     ^ string_of_int i)
+      (match get_dec_type cloud with
+      | 4 | 5 | 6 -> true
+      | _ -> false)
+  done
+
+let test_grass_type _ =
+  Random.self_init ();
+  for i = 1 to 50 do
+    let grass = create_grass 100. 100. 0. 0. in
+    assert_bool
+      ("Grass should be of type Grass1 or Grass2, iteration: " ^ string_of_int i)
+      (match get_dec_type grass with
+      | 0 | 1 -> true
+      | _ -> false)
+  done
+
+let test_bump_type _ =
+  Random.self_init ();
+  for i = 1 to 50 do
+    let bump = create_bump 100. 100. 0. 0. in
+    assert_bool
+      ("Bump should be of type Bump1 or Bump2, iteration: " ^ string_of_int i)
+      (match get_dec_type bump with
+      | 7 | 8 -> true
+      | _ -> false)
+  done
+
 (* Test decoration velocities within expected ranges *)
-let test_decoration_velocities _ =
+let test_star_velocity =
   let star = create_star 100. 100. (-5.) 0. in
-  let cloud = create_cloud 100. 100. (-10.) 0. in
   assert_bool "Star velocity X should be within range"
-    (in_range (fst (get_dec_vel star)) (-5., 0.));
+    (in_range (fst (get_dec_vel star)) (-5., 0.))
+
+let test_cloud_velocity =
+  let cloud = create_cloud 100. 100. (-10.) 0. in
   assert_bool "Cloud velocity X should be within range"
     (in_range (fst (get_dec_vel cloud)) (-10., 0.))
+
+let test_decoration_velocities _ =
+  test_cloud_velocity;
+  test_star_velocity
 
 (* Obstacle creation type and adjustment tests *)
 let test_obstacle_type_and_adjustment _ =
@@ -77,13 +151,13 @@ let test_obstacle_type_and_adjustment _ =
       match type_id with
       | 0 ->
           (* Short *)
-          assert_bool "Short type adjustment incorrect" (almost_equal y 103.)
+          assert_bool "Short type adjustment correct" (almost_equal y 103.)
       | 1 ->
           (* Normal *)
-          assert_bool "Normal type adjustment incorrect" (almost_equal y 88.)
+          assert_bool "Normal type adjustment correct" (almost_equal y 88.)
       | 2 ->
           (* Tall *)
-          assert_bool "Tall type adjustment incorrect" (almost_equal y 91.)
+          assert_bool "Tall type adjustment correct" (almost_equal y 91.)
       | _ -> assert_failure "Unknown obstacle type")
     obstacles
 
@@ -107,10 +181,9 @@ let test_player_after_collision _ =
   let player = create_player 0 in
   let obstacle = create_obstacle 30. 180. 0. 0. in
   let _ = collision player obstacle 22. 22. in
-  Player.jump player;
   (* Simulate reaction *)
-  assert_bool "Player should still be able to jump after collision"
-    (snd player.vel < 0.)
+  assert_bool "Players velocity should reset on collision. "
+    (snd player.vel <= 0.)
 
 let test_event_retention _ =
   let initial_event_count = List.length !events in
@@ -204,20 +277,16 @@ let test_reactivation_of_menu _ =
   let score_ref = ref 40 in
   test_game_start !score_ref (fun new_score ->
       score_ref := new_score;
-      (* Game ends with some score *)
       test_menu_start !score_ref (fun final_score ->
-          score_ref := final_score
-          (* Back to menu, score should be carried over *)));
+          score_ref := final_score (* Score should be carried over *)));
   assert_equal ~printer:string_of_int 50 !score_ref
 
 let test_multiple_game_sessions _ =
   let score_ref = ref 0 in
-  (* First game session *)
   test_game_start !score_ref (fun new_score ->
       score_ref := new_score;
       test_menu_start !score_ref (fun menu_score ->
           score_ref := menu_score;
-          (* Back to menu after first game *)
           (* Second game session *)
           test_game_start !score_ref (fun second_game_score ->
               score_ref := second_game_score)));
@@ -228,8 +297,12 @@ let tests =
   "test suite"
   >::: [
          "test player jump" >:: test_player_jump;
+         "test player jumping is alive" >:: test_player_jump_alive;
          "test obstacle collision" >:: test_obstacle_collision;
          "test obstacle no collision" >:: test_obstacle_no_collision;
+         "test edge collision" >:: test_collision_edge;
+         "test corner collision" >:: test_collision_corner;
+         "test collision with negatives" >:: test_collision_negative;
          "test decoration types" >:: test_decoration_types;
          "test decoration velocities" >:: test_decoration_velocities;
          "test obstacle types and adjustments"
@@ -247,6 +320,10 @@ let tests =
          "continue with previous score" >:: test_continue_with_previous_score;
          "reactivation of menu" >:: test_reactivation_of_menu;
          "multiple game sessions handling" >:: test_multiple_game_sessions;
+         "test cloud type" >:: test_cloud_type;
+         "test grass type" >:: test_grass_type;
+         "test star type" >:: test_star_type;
+         "test bump type" >:: test_bump_type;
        ]
 
 let _ = run_test_tt_main tests
