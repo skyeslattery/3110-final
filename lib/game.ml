@@ -415,113 +415,40 @@ let retain_camel_events =
        (fun img -> camel_images.(6).image_opt <- Some img)
        camel7_image
 
-let start best_score game_finished =
-  let player_state = init_game_state best_score in
-  let c = init_canvas width height in
-  Canvas.show c;
-  retain_camel_events;
+let cactus_normal_image =
+  Canvas.createOffscreenFromPNG "./assets/cactus_normal.png"
 
-  let bg_image = Canvas.createOffscreenFromPNG "./assets/bg.png" in
+let cactus_short_image =
+  Canvas.createOffscreenFromPNG "./assets/cactus_short.png"
 
-  let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png" in
+let cactus_tall_image = Canvas.createOffscreenFromPNG "./assets/cactus_tall.png"
+let grass1_image = Canvas.createOffscreenFromPNG "./assets/grass1.png"
+let grass2_image = Canvas.createOffscreenFromPNG "./assets/grass2.png"
+let cloud1_image = Canvas.createOffscreenFromPNG "./assets/cloud1.png"
+let cloud2_image = Canvas.createOffscreenFromPNG "./assets/cloud2.png"
+let cloud3_image = Canvas.createOffscreenFromPNG "./assets/cloud3.png"
+let star1_image = Canvas.createOffscreenFromPNG "./assets/star1.png"
+let star2_image = Canvas.createOffscreenFromPNG "./assets/star2.png"
+let bump1_image = Canvas.createOffscreenFromPNG "./assets/bump1.png"
+let bump2_image = Canvas.createOffscreenFromPNG "./assets/bump2.png"
 
-  let cactus_normal_image =
-    Canvas.createOffscreenFromPNG "./assets/cactus_normal.png"
-  in
-  let cactus_short_image =
-    Canvas.createOffscreenFromPNG "./assets/cactus_short.png"
-  in
-  let cactus_tall_image =
-    Canvas.createOffscreenFromPNG "./assets/cactus_tall.png"
-  in
-
-  let grass1_image = Canvas.createOffscreenFromPNG "./assets/grass1.png" in
-
-  let grass2_image = Canvas.createOffscreenFromPNG "./assets/grass2.png" in
-
-  let cloud1_image = Canvas.createOffscreenFromPNG "./assets/cloud1.png" in
-  let cloud2_image = Canvas.createOffscreenFromPNG "./assets/cloud2.png" in
-  let cloud3_image = Canvas.createOffscreenFromPNG "./assets/cloud3.png" in
-  let star1_image = Canvas.createOffscreenFromPNG "./assets/star1.png" in
-  let star2_image = Canvas.createOffscreenFromPNG "./assets/star2.png" in
-  let bump1_image = Canvas.createOffscreenFromPNG "./assets/bump1.png" in
-  let bump2_image = Canvas.createOffscreenFromPNG "./assets/bump2.png" in
-
-  let draw_frame () =
-    let dt = 0.033 in
-
-    (* Time increment per frame *)
-
-    (* Apply gravity to the player *)
-    let pl_x, pl_y = player_state.pos in
-    let pl_vx, pl_vy = player_state.vel in
-    let gravity_force = gravity_acceleration *. dt in
-    let pl_new_vy = pl_vy +. gravity_force in
-    let pl_new_x = pl_x +. (pl_vx *. dt) in
-    let pl_new_y = pl_y +. (pl_new_vy *. dt) in
-    (* Prevent player from falling through the ground *)
-    let pl_new_y =
-      if pl_new_y > 173. then (
-        grounded := true;
-        173.)
-      else pl_new_y
-    in
-    let pl_new_vy = if pl_new_y >= 173. then 0. else pl_new_vy in
-    let player_state =
-      update_player player_state pl_new_x pl_new_y pl_vx pl_new_vy
-    in
-
-    if Random.float 1.0 < dt /. ob_spawn_interval () then spawn_obstacle ();
-    obstacles := update_obstacles !obstacles;
-
-    if Random.float 1.0 < dt /. grass_spawn_interval () then spawn_grass ();
-
-    if Random.float 1.0 < dt /. bump_spawn_interval () then spawn_bump ();
-
-    if Random.float 1.0 < dt /. cloud_spawn_interval () then spawn_cloud ();
-
-    if Random.float 1.0 < dt /. star_spawn_interval () then spawn_star ();
-    decorations := update_decorations !decorations;
-
-    if check_collisions player_state !obstacles then (
-      player_state.is_alive <- false;
-      clear_events ();
-      events := [];
-      Canvas.hide c;
-      game_finished (max (int_of_float !score) best_score))
-    else (
-      Canvas.setFillColor c Color.white;
-      load_bg c;
-
-      draw_player c player_state;
-      draw_decs c !decorations;
-      draw_obstacles c !obstacles;
-      draw_score c;
-
-      score := !score +. 0.3;
-      Canvas.fill c ~nonzero:true;
-      Canvas.stroke c)
-  in
-
-  retain_event
-  @@ React.E.map
-       (fun bgImage ->
-         bg_img.image_opt <- Some bgImage;
-         load_bg c)
-       bg_image;
-
-  retain_event
-  @@ React.E.map
-       (fun player_image ->
-         player_img.image_opt <- Some player_image;
-         draw_player c player_state)
-       camel1_image;
-
+let retain_ob_events =
   retain_event
   @@ React.E.map
        (fun cac_norm_img -> cactus_normal_img.image_opt <- Some cac_norm_img)
        cactus_normal_image;
 
+  retain_event
+  @@ React.E.map
+       (fun cac_short_img -> cactus_short_img.image_opt <- Some cac_short_img)
+       cactus_short_image;
+
+  retain_event
+  @@ React.E.map
+       (fun cac_tall_img -> cactus_tall_img.image_opt <- Some cac_tall_img)
+       cactus_tall_image
+
+let retain_dec_events =
   retain_event
   @@ React.E.map
        (fun g1_img -> grass1_img.image_opt <- Some g1_img)
@@ -556,17 +483,87 @@ let start best_score game_finished =
   @@ React.E.map (fun s1_img -> star1_img.image_opt <- Some s1_img) star1_image;
 
   retain_event
-  @@ React.E.map (fun s2_img -> star2_img.image_opt <- Some s2_img) star2_image;
+  @@ React.E.map (fun s2_img -> star2_img.image_opt <- Some s2_img) star2_image
+
+let draw_frame c (player_state : Player.t) best_score game_finished =
+  let dt = 0.033 in
+
+  (* Time increment per frame *)
+
+  (* Apply gravity to the player *)
+  let pl_x, pl_y = player_state.pos in
+  let pl_vx, pl_vy = player_state.vel in
+  let gravity_force = gravity_acceleration *. dt in
+  let pl_new_vy = pl_vy +. gravity_force in
+  let pl_new_x = pl_x +. (pl_vx *. dt) in
+  let pl_new_y = pl_y +. (pl_new_vy *. dt) in
+  (* Prevent player from falling through the ground *)
+  let pl_new_y =
+    if pl_new_y > 173. then (
+      grounded := true;
+      173.)
+    else pl_new_y
+  in
+  let pl_new_vy = if pl_new_y >= 173. then 0. else pl_new_vy in
+  let player_state =
+    update_player player_state pl_new_x pl_new_y pl_vx pl_new_vy
+  in
+
+  if Random.float 1.0 < dt /. ob_spawn_interval () then spawn_obstacle ();
+  obstacles := update_obstacles !obstacles;
+
+  if Random.float 1.0 < dt /. grass_spawn_interval () then spawn_grass ();
+
+  if Random.float 1.0 < dt /. bump_spawn_interval () then spawn_bump ();
+
+  if Random.float 1.0 < dt /. cloud_spawn_interval () then spawn_cloud ();
+
+  if Random.float 1.0 < dt /. star_spawn_interval () then spawn_star ();
+  decorations := update_decorations !decorations;
+
+  if check_collisions player_state !obstacles then (
+    player_state.is_alive <- false;
+    clear_events ();
+    events := [];
+    Canvas.hide c;
+    game_finished (max (int_of_float !score) best_score))
+  else (
+    Canvas.setFillColor c Color.white;
+    load_bg c;
+
+    draw_player c player_state;
+    draw_decs c !decorations;
+    draw_obstacles c !obstacles;
+    draw_score c;
+
+    score := !score +. 0.3;
+    Canvas.fill c ~nonzero:true;
+    Canvas.stroke c)
+
+let start best_score game_finished =
+  let player_state = init_game_state best_score in
+  let c = init_canvas width height in
+  Canvas.show c;
+
+  let bg_image = Canvas.createOffscreenFromPNG "./assets/bg.png" in
+
+  retain_camel_events;
+  retain_dec_events;
+  retain_ob_events;
 
   retain_event
   @@ React.E.map
-       (fun cac_short_img -> cactus_short_img.image_opt <- Some cac_short_img)
-       cactus_short_image;
+       (fun bgImage ->
+         bg_img.image_opt <- Some bgImage;
+         load_bg c)
+       bg_image;
 
   retain_event
   @@ React.E.map
-       (fun cac_tall_img -> cactus_tall_img.image_opt <- Some cac_tall_img)
-       cactus_tall_image;
+       (fun player_image ->
+         player_img.image_opt <- Some player_image;
+         draw_player c player_state)
+       camel1_image;
 
   retain_event
   @@ React.E.map
@@ -591,7 +588,9 @@ let start best_score game_finished =
 
   retain_event
   @@ React.E.map
-       (fun _ -> if is_alive player_state then draw_frame ())
+       (fun _ ->
+         if is_alive player_state then
+           draw_frame c player_state best_score game_finished)
        Event.frame;
 
   Backend.run (fun () -> clear_events ())
