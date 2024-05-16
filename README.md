@@ -7,6 +7,8 @@ All art is original.
 
 <img width="800" alt="Screenshot 2024-05-16 at 2 46 58 PM" src="https://github.com/skyeslattery/3110-final/assets/144565459/90f02071-5617-4239-b1a2-4e296a09d628">
 
+ ## NOTE: Full screen does not work, seems to be an issue with the ocaml-canvas library. Please use in windowed mode. 
+
 Email us with any questions:
 
 Skye Slattery - dss354@cornell.edu
