@@ -5,7 +5,11 @@ open Collision
 open Decorations
 
 let gravity_acceleration = 240.
-let events = ref []
+
+let events =
+  Backend.init ();
+  ref []
+
 let grounded = ref true
 let retain_event e = events := e :: !events
 let clear_events () = events := []
@@ -18,6 +22,8 @@ let score = ref 0.
 
 type state = { mutable image_opt : Canvas.t option }
 
+let width = 800
+let height = 250
 let bg_img = { image_opt = None }
 let player_img = { image_opt = None }
 let camel_images = Array.init 7 (fun _ -> { image_opt = None })
@@ -36,7 +42,30 @@ let star2_img = { image_opt = None }
 let bump1_img = { image_opt = None }
 let bump2_img = { image_opt = None }
 
-let start best_score game_finished =
+let draw_player canvas player_state =
+  if is_alive player_state then
+    if !grounded then
+      let x, y = player_state.pos in
+      let index = int_of_float (!score /. 2.) mod 6 in
+      (* Cycle through camel images *)
+      match camel_images.(index).image_opt with
+      | Some image ->
+          Canvas.blit ~dst:canvas
+            ~dpos:(int_of_float x, int_of_float y)
+            ~src:image ~spos:(0, 0) ~size:(40, 30);
+          Canvas.show canvas
+      | _ -> ()
+    else
+      let x, y = player_state.pos in
+      match camel_images.(6).image_opt with
+      | Some image ->
+          Canvas.blit ~dst:canvas
+            ~dpos:(int_of_float x, int_of_float y)
+            ~src:image ~spos:(0, 0) ~size:(40, 30);
+          Canvas.show canvas
+      | _ -> ()
+
+let init_game_state best_score =
   Backend.init ();
   obstacles := [];
   score := 0.0;
@@ -49,14 +78,309 @@ let start best_score game_finished =
   decorations :=
     create_cloud (Random.float 200. +. 500.) 90. (-17.) 0. :: !decorations;
   events := [];
-  let player_state = create_player best_score in
+  create_player best_score
 
-  let width = 800 in
-  let height = 250 in
-  let c =
-    Canvas.createOnscreen ~title:"CamelGO" ~pos:(300, 200) ~size:(width, height)
-      ()
+let init_canvas width height =
+  Canvas.createOnscreen ~title:"Camel\n  GO" ~pos:(300, 200)
+    ~size:(width, height) ()
+
+let rec update_obstacles (obstacles : Obstacle.t list) =
+  match obstacles with
+  | [] -> []
+  | h :: t ->
+      let ob_x, ob_y = get_pos h in
+      let ob_vx, ob_vy = get_vel h in
+      let dt = 0.033 in
+      let ob_new_x = ob_x +. (ob_vx *. dt) in
+      let ob_new_y = ob_y +. (ob_vy *. dt) in
+      let updated_obstacle = update_obstacle h ob_new_x ob_new_y in
+      updated_obstacle :: update_obstacles t
+
+let rec update_decorations decs =
+  match decs with
+  | [] -> []
+  | h :: t ->
+      let dx, dy = get_dec_vel h in
+      let x, y = get_dec_pos h in
+      let dt = 0.033 in
+      let new_x = x +. (dx *. dt) in
+      let new_y = y +. (dy *. dt) in
+      update_dec h new_x new_y :: update_decorations t
+
+let rec check_collisions player_state obstacles =
+  if is_alive player_state then
+    match obstacles with
+    | [] -> false
+    | h :: t ->
+        collision player_state h
+          (float_of_int (get_height h))
+          (float_of_int (get_width h))
+        || check_collisions player_state t
+  else false
+
+let load_bg canvas =
+  match bg_img.image_opt with
+  | Some bg_image ->
+      Canvas.blit ~dst:canvas ~dpos:(0, 0) ~src:bg_image ~spos:(0, 0)
+        ~size:(width, height);
+      Canvas.show canvas
+  | _ -> ()
+
+let draw_short c ob =
+  let x, y = get_pos ob in
+  match cactus_short_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(36, 14);
+      Canvas.show c
+  | _ -> ()
+
+let draw_tall c ob =
+  let x, y = get_pos ob in
+  match cactus_tall_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(19, 36);
+      Canvas.show c
+  | _ -> ()
+
+let draw_normal c ob =
+  let x, y = get_pos ob in
+  match cactus_normal_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(20, 27);
+      Canvas.show c
+  | _ -> ()
+
+let draw_grass1 c g1 =
+  let x, y = get_dec_pos g1 in
+  match grass1_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(20, 7);
+      Canvas.show c
+  | _ -> ()
+
+let draw_grass2 c g2 =
+  let x, y = get_dec_pos g2 in
+  match grass2_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(20, 7);
+      Canvas.show c
+  | _ -> ()
+
+let draw_cloud1 c c1 =
+  let x, y = get_dec_pos c1 in
+  match cloud1_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(77, 20);
+      Canvas.show c
+  | _ -> ()
+
+let draw_cloud2 c c2 =
+  let x, y = get_dec_pos c2 in
+  match cloud2_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(73, 36);
+      Canvas.show c
+  | _ -> ()
+
+let draw_cloud3 c c3 =
+  let x, y = get_dec_pos c3 in
+  match cloud3_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(80, 23);
+      Canvas.show c
+  | _ -> ()
+
+let draw_star1 c s1 =
+  let x, y = get_dec_pos s1 in
+  match star1_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(6, 7);
+      Canvas.show c
+  | _ -> ()
+
+let draw_star2 c s2 =
+  let x, y = get_dec_pos s2 in
+  match star2_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(6, 7);
+      Canvas.show c
+  | _ -> ()
+
+let draw_bump1 c b1 =
+  let x, y = get_dec_pos b1 in
+  match bump1_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(9, 3);
+      Canvas.show c
+  | _ -> ()
+
+let draw_bump2 c b2 =
+  let x, y = get_dec_pos b2 in
+  match bump2_img.image_opt with
+  | Some image ->
+      Canvas.blit ~dst:c
+        ~dpos:(int_of_float x, int_of_float y)
+        ~src:image ~spos:(0, 0) ~size:(14, 3);
+      Canvas.show c
+  | _ -> ()
+
+let draw_dec c (dec : Decorations.t) =
+  match get_dec_type dec with
+  | 0 -> draw_grass1 c dec
+  | 1 -> draw_grass2 c dec
+  | 2 -> draw_star1 c dec
+  | 3 -> draw_star2 c dec
+  | 4 -> draw_cloud1 c dec
+  | 5 -> draw_cloud2 c dec
+  | 6 -> draw_cloud3 c dec
+  | 7 -> draw_bump1 c dec
+  | 8 -> draw_bump2 c dec
+  | _ -> failwith "unrecognized decoration type"
+
+let draw_obstacle c obstacle =
+  match get_type obstacle with
+  | 0 -> draw_short c obstacle
+  | 1 -> draw_tall c obstacle
+  | 2 -> draw_normal c obstacle
+  | _ -> failwith "unrecognized obstacle type"
+
+let rec draw_obstacles canvas (obstacles : Obstacle.t list) =
+  match obstacles with
+  | [] -> ()
+  | h :: t ->
+      draw_obstacle canvas h;
+      draw_obstacles canvas t
+
+let rec draw_decs canvas (decs : Decorations.t list) =
+  match decs with
+  | [] -> ()
+  | h :: t ->
+      draw_dec canvas h;
+      draw_decs canvas t
+
+let add_obstacle vel =
+  obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
+
+let add_grass vel =
+  decorations := create_grass 800. 183. (vel *. -1.) 0. :: !decorations
+
+let add_bump vel =
+  decorations := create_bump 800. 183. (vel *. -1.) 0. :: !decorations
+
+let add_cloud vel =
+  decorations :=
+    create_cloud 800. (Random.float 100.) (vel *. -1.) 0. :: !decorations
+
+let add_star vel =
+  decorations :=
+    create_star 800. (Random.float 25.) (vel *. -1.) 0. :: !decorations
+
+let ob_min_spawn_interval = 8.
+let ob_max_spawn_interval = 10.
+let dec_min_spawn_interval = 2.
+let dec_max_spawn_interval = 4.
+let speed = 170.
+
+(* Factor by which obstacle speed increases with score *)
+let speed_increase_factor = 1.05
+
+let ob_spawn_interval () =
+  let min_interval =
+    ob_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
   in
+  let max_interval =
+    ob_max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
+  in
+  Random.float (max_interval -. min_interval) +. min_interval
+
+let grass_spawn_interval () =
+  let min_interval =
+    dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
+  in
+  let max_interval =
+    dec_max_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
+  in
+  Random.float (max_interval -. min_interval) +. min_interval
+
+let bump_spawn_interval () =
+  let min_interval =
+    dec_min_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
+  in
+  let max_interval =
+    dec_max_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
+  in
+  Random.float (max_interval -. min_interval) +. min_interval
+
+let cloud_spawn_interval () =
+  let min_interval =
+    dec_min_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
+  in
+  let max_interval =
+    dec_max_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
+  in
+  Random.float (max_interval -. min_interval) +. min_interval
+
+let star_spawn_interval () =
+  let min_interval =
+    dec_min_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
+  in
+  let max_interval =
+    dec_max_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
+  in
+  Random.float (max_interval -. min_interval) +. min_interval
+
+let spawn_obstacle () =
+  let vel = speed +. (!score /. 10.) in
+  add_obstacle vel
+
+let spawn_grass () =
+  let vel = speed +. (!score /. 10.) in
+  add_grass vel
+
+let spawn_bump () =
+  let vel = speed +. (!score /. 10.) in
+  add_bump vel
+
+let spawn_cloud () =
+  let vel = (speed /. 10.) +. (!score /. 1000.) in
+  add_cloud vel
+
+let spawn_star () =
+  let vel = (speed /. 20.) +. (!score /. 1000.) in
+  add_star vel
+
+let draw_score canvas =
+  Canvas.setFillColor canvas (Color.of_rgb 27 23 27);
+  Canvas.setFont canvas "Geonica" ~size:28. ~slant:Font.Roman ~weight:50;
+  Canvas.setLineWidth canvas 15.;
+  Canvas.fillText canvas (string_of_int (int_of_float !score)) (740., 24.)
+
+let start best_score game_finished =
+  let player_state = init_game_state best_score in
+
+  let c = init_canvas width height in
 
   Canvas.show c;
 
@@ -67,7 +391,6 @@ let start best_score game_finished =
   let camel5_image = Canvas.createOffscreenFromPNG "./assets/camel5.png" in
   let camel6_image = Canvas.createOffscreenFromPNG "./assets/camel6.png" in
   let camel7_image = Canvas.createOffscreenFromPNG "./assets/camel7.png" in
-
   retain_event
   @@ React.E.map
        (fun img -> camel_images.(0).image_opt <- Some img)
@@ -97,74 +420,6 @@ let start best_score game_finished =
        (fun img -> camel_images.(6).image_opt <- Some img)
        camel7_image;
 
-  let draw_player canvas player_state =
-    if is_alive player_state then
-      if !grounded then
-        let x, y = player_state.pos in
-        let index = int_of_float (!score /. 2.) mod 6 in
-        (* Cycle through camel images *)
-        match camel_images.(index).image_opt with
-        | Some image ->
-            Canvas.blit ~dst:c
-              ~dpos:(int_of_float x, int_of_float y)
-              ~src:image ~spos:(0, 0) ~size:(40, 30);
-            Canvas.show canvas
-        | _ -> ()
-      else
-        let x, y = player_state.pos in
-        match camel_images.(6).image_opt with
-        | Some image ->
-            Canvas.blit ~dst:c
-              ~dpos:(int_of_float x, int_of_float y)
-              ~src:image ~spos:(0, 0) ~size:(40, 30);
-            Canvas.show canvas
-        | _ -> ()
-  in
-
-  let rec update_obstacles (obstacles : Obstacle.t list) =
-    match obstacles with
-    | [] -> []
-    | h :: t ->
-        let ob_x, ob_y = get_pos h in
-        let ob_vx, ob_vy = get_vel h in
-        let dt = 0.033 in
-        let ob_new_x = ob_x +. (ob_vx *. dt) in
-        let ob_new_y = ob_y +. (ob_vy *. dt) in
-        let updated_obstacle = update_obstacle h ob_new_x ob_new_y in
-        updated_obstacle :: update_obstacles t
-  in
-
-  let rec update_decorations decs =
-    match decs with
-    | [] -> []
-    | h :: t ->
-        let dx, dy = get_dec_vel h in
-        let x, y = get_dec_pos h in
-        let dt = 0.033 in
-        let new_x = x +. (dx *. dt) in
-        let new_y = y +. (dy *. dt) in
-        update_dec h new_x new_y :: update_decorations t
-  in
-
-  let rec check_collisions player_state obstacles =
-    if is_alive player_state then
-      match obstacles with
-      | [] -> false
-      | h :: t ->
-          collision player_state h
-            (float_of_int (get_height h))
-            (float_of_int (get_width h))
-          || check_collisions player_state t
-    else false
-  in
-
-  let draw_score canvas =
-    Canvas.setFillColor canvas (Color.of_rgb 27 23 27);
-    Canvas.setFont canvas "Geonica" ~size:28. ~slant:Font.Roman ~weight:50;
-    Canvas.setLineWidth canvas 15.;
-    Canvas.fillText canvas (string_of_int (int_of_float !score)) (740., 24.)
-  in
-
   let bg_image = Canvas.createOffscreenFromPNG "./assets/bg.png" in
 
   let camel1_image = Canvas.createOffscreenFromPNG "./assets/camel1.png" in
@@ -190,281 +445,6 @@ let start best_score game_finished =
   let star2_image = Canvas.createOffscreenFromPNG "./assets/star2.png" in
   let bump1_image = Canvas.createOffscreenFromPNG "./assets/bump1.png" in
   let bump2_image = Canvas.createOffscreenFromPNG "./assets/bump2.png" in
-
-  let load_bg canvas =
-    match bg_img.image_opt with
-    | Some bg_image ->
-        Canvas.blit ~dst:c ~dpos:(0, 0) ~src:bg_image ~spos:(0, 0)
-          ~size:(width, height);
-        Canvas.show canvas
-    | _ -> ()
-  in
-
-  let draw_short c ob =
-    let x, y = get_pos ob in
-    match cactus_short_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(36, 14);
-        Canvas.show c
-    | _ -> ()
-  in
-
-  let draw_tall c ob =
-    let x, y = get_pos ob in
-    match cactus_tall_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(19, 36);
-        Canvas.show c
-    | _ -> ()
-  in
-
-  let draw_normal c ob =
-    let x, y = get_pos ob in
-    match cactus_normal_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(20, 27);
-        Canvas.show c
-    | _ -> ()
-  in
-
-  let draw_grass1 c g1 =
-    let x, y = get_dec_pos g1 in
-    match grass1_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(20, 7);
-        Canvas.show c
-    | _ -> ()
-  in
-
-  let draw_grass2 c g2 =
-    let x, y = get_dec_pos g2 in
-    match grass2_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(20, 7);
-        Canvas.show c
-    | _ -> ()
-  in
-  let draw_cloud1 c c1 =
-    let x, y = get_dec_pos c1 in
-    match cloud1_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(77, 20);
-        Canvas.show c
-    | _ -> ()
-  in
-  let draw_cloud2 c c2 =
-    let x, y = get_dec_pos c2 in
-    match cloud2_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(73, 36);
-        Canvas.show c
-    | _ -> ()
-  in
-  let draw_cloud3 c c3 =
-    let x, y = get_dec_pos c3 in
-    match cloud3_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(80, 23);
-        Canvas.show c
-    | _ -> ()
-  in
-  let draw_star1 c s1 =
-    let x, y = get_dec_pos s1 in
-    match star1_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(6, 7);
-        Canvas.show c
-    | _ -> ()
-  in
-  let draw_star2 c s2 =
-    let x, y = get_dec_pos s2 in
-    match star2_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(6, 7);
-        Canvas.show c
-    | _ -> ()
-  in
-  let draw_bump1 c b1 =
-    let x, y = get_dec_pos b1 in
-    match bump1_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(9, 3);
-        Canvas.show c
-    | _ -> ()
-  in
-  let draw_bump2 c b2 =
-    let x, y = get_dec_pos b2 in
-    match bump2_img.image_opt with
-    | Some image ->
-        Canvas.blit ~dst:c
-          ~dpos:(int_of_float x, int_of_float y)
-          ~src:image ~spos:(0, 0) ~size:(14, 3);
-        Canvas.show c
-    | _ -> ()
-  in
-
-  let draw_dec c (dec : Decorations.t) =
-    match get_dec_type dec with
-    | 0 -> draw_grass1 c dec
-    | 1 -> draw_grass2 c dec
-    | 2 -> draw_star1 c dec
-    | 3 -> draw_star2 c dec
-    | 4 -> draw_cloud1 c dec
-    | 5 -> draw_cloud2 c dec
-    | 6 -> draw_cloud3 c dec
-    | 7 -> draw_bump1 c dec
-    | 8 -> draw_bump2 c dec
-    | _ -> failwith "unrecognized decoration type"
-  in
-
-  let draw_obstacle c obstacle =
-    match get_type obstacle with
-    | 0 -> draw_short c obstacle
-    | 1 -> draw_tall c obstacle
-    | 2 -> draw_normal c obstacle
-    | _ -> failwith "unrecognized obstacle type"
-  in
-
-  let rec draw_obstacles canvas (obstacles : Obstacle.t list) =
-    match obstacles with
-    | [] -> ()
-    | h :: t ->
-        draw_obstacle canvas h;
-        draw_obstacles canvas t
-  in
-
-  let rec draw_decs canvas (decs : Decorations.t list) =
-    match decs with
-    | [] -> ()
-    | h :: t ->
-        draw_dec canvas h;
-        draw_decs canvas t
-  in
-
-  let add_obstacle vel =
-    obstacles := create_obstacle 800. 183. (vel *. -1.) 0. :: !obstacles
-  in
-
-  let add_grass vel =
-    decorations := create_grass 800. 183. (vel *. -1.) 0. :: !decorations
-  in
-
-  let add_bump vel =
-    decorations := create_bump 800. 183. (vel *. -1.) 0. :: !decorations
-  in
-
-  let add_cloud vel =
-    decorations :=
-      create_cloud 800. (Random.float 100.) (vel *. -1.) 0. :: !decorations
-  in
-
-  let add_star vel =
-    decorations :=
-      create_star 800. (Random.float 25.) (vel *. -1.) 0. :: !decorations
-  in
-
-  let ob_min_spawn_interval = 8. in
-  let ob_max_spawn_interval = 10. in
-  let dec_min_spawn_interval = 2. in
-  let dec_max_spawn_interval = 4. in
-  let speed = 170. in
-  (* Factor by which obstacle speed increases with score *)
-  let speed_increase_factor = 1.05 in
-
-  let ob_spawn_interval () =
-    let min_interval =
-      ob_min_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
-    in
-    let max_interval =
-      ob_max_spawn_interval /. (speed_increase_factor ** (!score /. 50.))
-    in
-    Random.float (max_interval -. min_interval) +. min_interval
-  in
-
-  let grass_spawn_interval () =
-    let min_interval =
-      dec_min_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
-    in
-    let max_interval =
-      dec_max_spawn_interval /. (speed_increase_factor ** (!score /. 30.))
-    in
-    Random.float (max_interval -. min_interval) +. min_interval
-  in
-  let bump_spawn_interval () =
-    let min_interval =
-      dec_min_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
-    in
-    let max_interval =
-      dec_max_spawn_interval *. 4. /. (speed_increase_factor ** (!score /. 90.))
-    in
-    Random.float (max_interval -. min_interval) +. min_interval
-  in
-
-  let cloud_spawn_interval () =
-    let min_interval =
-      dec_min_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
-    in
-    let max_interval =
-      dec_max_spawn_interval *. 12. /. (speed_increase_factor ** (!score /. 50.))
-    in
-    Random.float (max_interval -. min_interval) +. min_interval
-  in
-
-  let star_spawn_interval () =
-    let min_interval =
-      dec_min_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
-    in
-    let max_interval =
-      dec_max_spawn_interval *. 18. /. (speed_increase_factor ** (!score /. 50.))
-    in
-    Random.float (max_interval -. min_interval) +. min_interval
-  in
-
-  let spawn_obstacle () =
-    let vel = speed +. (!score /. 10.) in
-    add_obstacle vel
-  in
-
-  let spawn_grass () =
-    let vel = speed +. (!score /. 10.) in
-    add_grass vel
-  in
-  let spawn_bump () =
-    let vel = speed +. (!score /. 10.) in
-    add_bump vel
-  in
-
-  let spawn_cloud () =
-    let vel = (speed /. 10.) +. (!score /. 1000.) in
-    add_cloud vel
-  in
-
-  let spawn_star () =
-    let vel = (speed /. 20.) +. (!score /. 1000.) in
-    add_star vel
-  in
 
   let draw_frame () =
     let dt = 0.033 in
